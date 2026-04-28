@@ -22,6 +22,9 @@ def compute_tau_int_traceXY_topow_r(lam, r):
         tensor([1.0000, 0.8571, 0.7388])
         >>> torch.allclose(tau,tauref)
         True
+
+        >>> compute_tau_int_traceXY_topow_r(lam,3)
+        tensor([1.0000, 0.8571, 0.7388, 0.6402])
     """
     N = lam.size(-1)
     device = lam.device
