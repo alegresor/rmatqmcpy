@@ -2,7 +2,6 @@ import torch
 import agsutil
 from jackpy.jack import ZonalPol
 import sympy
-from sympy.combinatorics.partitions import IntegerPartition
 import numpy as np
 import qmcpy
 

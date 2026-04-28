@@ -1,5 +1,5 @@
 doctests:
-	pytest --doctest-modules manifoldqmcpy/ -W ignore
+	pytest --doctest-modules flagqmcpy/ -W ignore
 
 doctestsaccept:
-	pytest --doctest-modules manifoldqmcpy/ -W ignore --accept
+	pytest --doctest-modules flagqmcpy/ -W ignore --accept
