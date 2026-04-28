@@ -37,8 +37,7 @@ def compute_tau_int_traceXY_topow_r(lam, r):
         for m in agsutil.enumerate_partitions(t):
             if len(m)>N: continue
             mpart = sympy.combinatorics.partitions.IntegerPartition(m)
-            numerator = ZonalPol(N,mpart)(*lamlist)
-            denominator = ZonalPol(N,mpart)(*onesN)
-            exprtm = (numerator**2)/denominator
+            zp = ZonalPol(N,mpart)
+            exprtm = (zp(*lamlist)**2)/zp(*onesN)
             tau[t] += float(exprtm)
     return tau
