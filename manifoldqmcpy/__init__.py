@@ -2,4 +2,19 @@ __version__ = "0.1"
 
 from .util import (
     compute_tau_int_traceXY_topow_r,
+    KernelPolyFlag,
+    tff_eig,
+    tff_qr,
+    genflag_q_eig_iid,
+    genflag_q_eig_ld,
+    genflag_q_qr_iid,
+    genflag_q_qr_ld,
+    genflag_x_eig_iid,
+    genflag_x_eig_ld,
+    genflag_x_qr_iid,
+    genflag_x_qr_ld,
+    genflag_x_eig_iid_equal_w,
+    genflag_x_eig_ld_equal_w,
+    genflag_x_qr_iid_equal_w,
+    genflag_x_qr_ld_equal_w,
 )
