@@ -29,18 +29,16 @@ def compute_tau_int_traceXY_topow_r(lam, r):
     """
     N = lam.size(-1)
     device = lam.device
-    tau = torch.ones(r+1,device=device)
+    tau = torch.zeros(r+1,device=device)
+    tau[0] = 1
     lamlist = lam.cpu().tolist()
     onesN = [1.]*N
     for t in range(1,r+1):
-        exprt = 0
         for m in agsutil.enumerate_partitions(t):
+            if len(m)>N: continue
             mpart = sympy.combinatorics.partitions.IntegerPartition(m)
             numerator = ZonalPol(N,mpart)(*lamlist)
             denominator = ZonalPol(N,mpart)(*onesN)
             exprtm = (numerator**2)/denominator
-            exprt = exprt+exprtm
-        exprt = sympy.simplify(exprt)
-        tau[t] = float(exprt)
-        # tau[t] = float(exprt.subs({Nsymbol:N}))
+            tau[t] += float(exprtm)
     return tau
