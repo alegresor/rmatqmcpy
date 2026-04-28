@@ -1,6 +1,7 @@
 import torch 
 import agsutil
 import haarpy 
+import sympy
 
 def compute_tau_int_traceXY_topow_r(lam, r):
     r""" 
@@ -24,11 +25,12 @@ def compute_tau_int_traceXY_topow_r(lam, r):
     """
     N = lam.size(-1)
     device = lam.device
-    tau = torch.zeros(r+1,device=device)
-    tau[0] = 1
+    tau = torch.ones(r+1,device=device)
     lamlampows = (lam[:,None,None]*lam[None,:,None])**torch.arange(r+1,device=device)
     Nrange = torch.arange(N,device=device)
+    Nsymbol = sympy.Symbol("N")
     for t in range(1,r+1):
+        exprt = 0
         for ms in agsutil.enumerate_sums(N**2, t):
             mvec = torch.tensor(ms, dtype=int, device=device)
             mmat = mvec.reshape((N, N))
@@ -41,6 +43,8 @@ def compute_tau_int_traceXY_topow_r(lam, r):
                     exponent = mmat[i,k].item()
                     row_indices.extend([i]*(2*exponent))
                     col_indices.extend([k]*(2*exponent))
-            h_int = float(haarpy.haar_integral_orthogonal((tuple(row_indices),tuple(col_indices)),N))
-            tau[t] += c * lam_prod * h_int
+            exprtm = float(c*lam_prod)*haarpy.haar_integral_orthogonal((tuple(row_indices),tuple(col_indices)),Nsymbol)
+            exprt = exprt+exprtm
+        exprt = sympy.simplify(exprt)
+        tau[t] = float(exprt.subs({Nsymbol:N}))
     return tau
