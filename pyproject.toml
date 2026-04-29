@@ -26,12 +26,12 @@ keywords = [
     ]
 license = "GPL-3.0"
 dynamic = ["version"]
-requires-python = ">=3.7,<3.10" # the upper bound is due to the "jackpolynomials" package 
+requires-python = ">=3.7" # the upper bound is due to the "jackpolynomials" package 
 dependencies = [
     "numpy >= 1.17.0",
     "torch >= 2.0",
     "agsutil",
-    "jackpolynomials == 0.1.0",
+    "jackpolynomials == 0.1.0", # pip install --ignore-requires-python jackpolynomials
     "qmcpy >= 2.2",
 ]
 
