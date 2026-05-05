@@ -91,6 +91,79 @@ class KernelPolyFlag(object):
         v = (self.c+(x*y).sum((-2,-1)))**self.r/self.double_integral 
         return v
 
+class KernelMaternChordal(object):
+    r"""
+    Examples:
+        >>> torch.set_default_dtype(torch.float64) 
+        >>> rng = torch.Generator().manual_seed(7)
+
+        >>> lam = torch.arange(1,8,dtype=float)
+        >>> lam = lam/torch.linalg.norm(lam)
+        >>> x = genflag_x_qr_iid(4,lam,seed=7)
+        >>> x.shape 
+        torch.Size([4, 7, 7])
+
+        >>> kernel = KernelMaternChordal(lam,nu=1/2)
+        >>> k = kernel(x[:,None,:,:],x[None,:,:,:])
+        >>> k.shape 
+        torch.Size([4, 4])
+        >>> k 
+        tensor([[1.0000, 0.5492, 0.6187, 0.5031],
+                [0.5492, 1.0000, 0.5205, 0.4770],
+                [0.6187, 0.5205, 1.0000, 0.4945],
+                [0.5031, 0.4770, 0.4945, 1.0000]])
+
+        >>> for nu in [1/2,3/2,5/2,7/2,9/2,11/2,13/2,np.inf]:
+        ...     kernel = KernelMaternChordal(lam,nu=1/2)
+        ...     k = kernel(x[:,None,:,:],x[None,:,:,:])
+        ...     assert k.shape==(4,4)
+        ...     assert not k.isnan().any()
+        ...     assert k.isfinite().all()
+    """
+    SUPPORTED_NU = [1/2,3/2,5/2,7/2,9/2,11/2,13/2,np.inf]
+    def __init__(self, lam, nu, sigma2=1, rho=1):
+        self.lam = lam 
+        self.nu = nu
+        self.sigma2 = sigma2 
+        self.rho = rho 
+        self.tr_lam2 = (self.lam**2).sum()
+        assert self.nu in self.SUPPORTED_NU, "nu should be in %s"%str(self.SUPPORTED_NU)
+        if self.nu==1/2: 
+            self.c = torch.tensor([1],dtype=self.lam.dtype,device=self.lam.device)
+            self.nu_str = r"$\nu = 1/2$"
+        elif self.nu==3/2:
+            self.c = torch.tensor([1,np.sqrt(3)],dtype=self.lam.dtype,device=self.lam.device)
+            self.nu_str = r"$\nu = 3/2$"
+        elif self.nu==5/2:
+            self.c = torch.tensor([1,np.sqrt(5),5/3],dtype=self.lam.dtype,device=self.lam.device)
+            self.nu_str = r"$\nu = 5/2$"
+        elif self.nu==7/2:
+            self.c = torch.tensor([1,np.sqrt(7),14/5,7*np.sqrt(7)/15],dtype=self.lam.dtype,device=self.lam.device)
+            self.nu_str = r"$\nu = 7/2$"
+        elif self.nu==9/2:
+            self.c = torch.tensor([1,3,27/7,18/7,27/35],dtype=self.lam.dtype,device=self.lam.device)
+            self.nu_str = r"$\nu = 9/2$"
+        elif self.nu==11/2:
+            self.c = torch.tensor([1,np.sqrt(11),44/9,11*np.sqrt(11)/9,121/63,121*np.sqrt(11)/945],dtype=self.lam.dtype,device=self.lam.device)
+            self.nu_str = r"$\nu = 11/2$"
+        elif self.nu==13/2:
+            self.c = torch.tensor([1,np.sqrt(13),65/11,52*np.sqrt(13)/33,338/99,169*np.sqrt(13)/495,2197/10395],dtype=self.lam.dtype,device=self.lam.device)
+            self.nu_str = r"$\nu = 13/2$"
+        elif self.nu==np.inf:
+            self.nu_str = r"$\nu = \infty$"
+    def chordal_dist(self, x, y):
+        return torch.linalg.norm(x-y,dim=(-2,-1))
+    def __call__(self, x, y):
+        r = self.chordal_dist(x,y) 
+        rscaled = r/self.rho
+        if self.nu==np.inf:
+            k = torch.exp(-(rscaled)**2/2)
+        else:
+            exp_term = torch.exp(-np.sqrt(2*self.nu)*rscaled) 
+            poly_term = (self.c*rscaled[...,None]**torch.arange(len(self.c),dtype=self.lam.dtype)).sum(-1)
+            k = exp_term*poly_term
+        return self.sigma2*k
+
 def tff_qr(u):
     r"""
     Examples:

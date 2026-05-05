@@ -3,6 +3,7 @@ __version__ = "0.1"
 from .util import (
     compute_tau_int_traceXY_topow_r,
     KernelPolyFlag,
+    KernelMaternChordal,
     tff_eig,
     tff_qr,
     genflag_q_eig_iid,
