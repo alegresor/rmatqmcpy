@@ -99,6 +99,7 @@ class KernelMaternChordal(object):
         >>> lam = torch.arange(1,8,dtype=float)
         >>> lam = lam/torch.linalg.norm(lam)
         >>> kernel = KernelMaternChordal(lam,nu=1/2)
+
         >>> x = rand_flag_real(3,lam,seed=7)
         >>> x.shape 
         torch.Size([3, 7, 7])
@@ -116,9 +117,6 @@ class KernelMaternChordal(object):
         ...     assert not k.isnan().any()
         ...     assert k.isfinite().all()
         
-        >>> lam = torch.arange(1,8).to(torch.complex128)
-        >>> lam = lam/torch.linalg.norm(lam)
-        >>> kernel = KernelMaternChordal(lam,nu=1/2)
         >>> x = rand_flag_complex(3,lam,seed=7)
         >>> x.shape 
         torch.Size([3, 7, 7])
@@ -126,9 +124,9 @@ class KernelMaternChordal(object):
         >>> k.shape 
         torch.Size([3, 3])
         >>> k
-        tensor([[1.0000, 0.2617, 0.2203],
-                [0.2617, 1.0000, 0.2343],
-                [0.2203, 0.2343, 1.0000]])
+        tensor([[1.0000, 0.5225, 0.5189],
+                [0.5225, 1.0000, 0.5716],
+                [0.5189, 0.5716, 1.0000]])
         >>> for nu in [1/2,3/2,5/2,7/2,9/2,11/2,13/2,np.inf]:
         ...     kernel = KernelMaternChordal(lam,nu=1/2)
         ...     k = kernel(x[:,None,:,:],x[None,:,:,:])
@@ -616,10 +614,10 @@ def rand_flag_real(n, lam, seed=None, rand_coe=rand_coe_qr, qp_unif_gen=qp.IIDSt
                  [-0.2117,  0.5880,  0.1135],
                  [-0.0450,  0.1135,  0.6057]]])
     """
-    assert rand_coe in [rand_coe_qr,rand_coe_qr]
+    assert rand_coe in [rand_coe_qr,rand_coe_eig]
+    assert not torch.is_complex(lam)
     q = rand_coe(n=n,N=lam.size(-1),seed=seed,device=lam.device,qp_unif_gen=qp_unif_gen)
-    assert q.dtype==lam.dtype, "q.dtype = %s but lam.dtype = %s"%(q.dtype,lam.dtype)
-    x = torch.einsum("...ij,...j,...kj->...ik",q,lam,q)
+    x = torch.einsum("...ij,...j,...kj->...ik",q,lam.to(q.dtype),q)
     return x
 
 def rand_flag_complex(n, lam, seed=None, rand_cue=rand_cue_qr, qp_unif_gen=qp.IIDStdUniform):
@@ -627,24 +625,24 @@ def rand_flag_complex(n, lam, seed=None, rand_cue=rand_cue_qr, qp_unif_gen=qp.II
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
 
-        >>> lam = torch.arange(1,4).to(torch.complex128)
+        >>> lam = torch.arange(1,4,dtype=float)
         >>> lam = lam/torch.linalg.norm(lam)
         >>> x = rand_flag_complex(2,lam,seed=7)
         >>> x.shape 
         torch.Size([2, 3, 3])
         >>> x
-        tensor([[[ 0.1729-0.4274j, -0.2930-0.0175j,  0.1176+0.2058j],
-                 [-0.2930-0.0175j, -0.3595-0.0919j,  0.2406-0.1837j],
-                 [ 0.1176+0.2058j,  0.2406-0.1837j,  0.1297-0.4062j]],
+        tensor([[[ 0.5330-2.6890e-17j,  0.0552+1.6613e-01j, -0.1884-6.8538e-02j],
+                 [ 0.0552-1.6613e-01j,  0.5332+1.8188e-18j,  0.0186+1.5354e-02j],
+                 [-0.1884+6.8538e-02j,  0.0186-1.5354e-02j,  0.5374+1.4321e-17j]],
         <BLANKLINE>
-                [[ 0.1506+0.3794j, -0.0681-0.0964j,  0.0639+0.2867j],
-                 [-0.0681-0.0964j,  0.0973+0.5689j, -0.0049-0.0561j],
-                 [ 0.0639+0.2867j, -0.0049-0.0561j, -0.4936+0.2231j]]])
+                [[ 0.4512+1.7336e-17j, -0.1101+1.5204e-02j,  0.1480-1.7041e-01j],
+                 [-0.1101-1.5204e-02j,  0.5788-7.8507e-18j, -0.0483+2.4620e-02j],
+                 [ 0.1480+1.7041e-01j, -0.0483-2.4620e-02j,  0.5736-3.6136e-18j]]])
     """
-    assert rand_cue in [rand_cue_qr,rand_cue_qr]
+    assert rand_cue in [rand_cue_qr,rand_cue_eig]
+    assert not torch.is_complex(lam)
     q = rand_cue(n=n,N=lam.size(-1),seed=seed,device=lam.device,qp_unif_gen=qp_unif_gen)
-    assert q.dtype==lam.dtype, "q.dtype = %s but lam.dtype = %s"%(q.dtype,lam.dtype)
-    x = torch.einsum("...ij,...j,...kj->...ik",q,lam,q)
+    x = torch.einsum("...ij,...j,...kj->...ik",q,lam.to(q.dtype),q.conj())
     return x
 
 def rand_flag_quaternionic(n, lam, seed=None, rand_cqe=rand_cqe_svd, qp_unif_gen=qp.IIDStdUniform):
@@ -652,40 +650,45 @@ def rand_flag_quaternionic(n, lam, seed=None, rand_cqe=rand_cqe_svd, qp_unif_gen
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
 
-        >>> lam = torch.arange(1,7).to(torch.complex128)
+        >>> lam = torch.arange(1,4,dtype=float)
         >>> lam = lam/torch.linalg.norm(lam)
         >>> x = rand_flag_quaternionic(2,lam,seed=7)
         >>> x.shape 
         torch.Size([2, 6, 6])
         >>> x
-        tensor([[[-0.0592-6.9068e-02j,  0.1140+8.5299e-02j, -0.1304-4.4332e-02j,
-                   0.0542-2.6091e-01j, -0.0535+8.4703e-02j,  0.0859-4.2918e-02j],
-                 [ 0.1140+8.5299e-02j, -0.0475+1.6696e-01j, -0.1397-1.6801e-01j,
-                   0.0744+8.1277e-02j, -0.1115-1.6543e-01j,  0.1833+6.7659e-02j],
-                 [-0.1304-4.4332e-02j, -0.1397-1.6801e-01j,  0.0228-1.8098e-01j,
-                   0.0547+1.5899e-01j, -0.1775+4.6869e-02j, -0.0182+1.0275e-01j],
-                 [ 0.0542-2.6091e-01j,  0.0744+8.1277e-02j,  0.0547+1.5899e-01j,
-                  -0.0192+1.3284e-01j,  0.0987-1.5293e-02j, -0.1490+1.6693e-01j],
-                 [-0.0535+8.4703e-02j, -0.1115-1.6543e-01j, -0.1775+4.6869e-02j,
-                   0.0987-1.5293e-02j,  0.0420-7.7952e-03j, -0.2053+9.4035e-02j],
-                 [ 0.0859-4.2918e-02j,  0.1833+6.7659e-02j, -0.0182+1.0275e-01j,
-                  -0.1490+1.6693e-01j, -0.2053+9.4035e-02j,  0.0207+7.4126e-02j]],
+        tensor([[[ 0.1039+2.2207e-18j, -0.0657+2.7406e-01j,  0.2670+1.9196e-01j,
+                  -0.2458+3.7671e-02j, -0.1937+5.2998e-03j, -0.0665-1.4676e-01j],
+                 [-0.0657-2.7406e-01j, -0.1392+1.2335e-18j, -0.1863+1.6344e-01j,
+                  -0.1937+5.2998e-03j, -0.1535-2.0375e-01j,  0.0983+2.4468e-01j],
+                 [ 0.2670-1.9196e-01j, -0.1863-1.6344e-01j, -0.0219+5.7349e-18j,
+                  -0.0665-1.4676e-01j,  0.0983+2.4468e-01j, -0.0638-2.7260e-01j],
+                 [ 0.2458+3.7671e-02j,  0.1937+5.2998e-03j,  0.0665-1.4676e-01j,
+                   0.1039+7.0945e-18j, -0.0657-2.7406e-01j,  0.2670-1.9196e-01j],
+                 [ 0.1937+5.2998e-03j,  0.1535-2.0375e-01j, -0.0983+2.4468e-01j,
+                  -0.0657+2.7406e-01j, -0.1392-5.8086e-18j, -0.1863-1.6344e-01j],
+                 [ 0.0665-1.4676e-01j, -0.0983+2.4468e-01j,  0.0638-2.7260e-01j,
+                   0.2670+1.9196e-01j, -0.1863+1.6344e-01j, -0.0219+1.4636e-17j]],
         <BLANKLINE>
-                [[-0.0406+2.7184e-02j, -0.2053+1.1874e-01j,  0.0210+1.1890e-01j,
-                   0.0536-6.1462e-02j, -0.0156+2.1492e-01j,  0.2054+5.8940e-02j],
-                 [-0.2053+1.1874e-01j, -0.0519+4.1849e-02j, -0.1762-4.1791e-02j,
-                   0.1192+1.3104e-01j,  0.0686-1.1056e-03j, -0.1636+6.5585e-02j],
-                 [ 0.0210+1.1890e-01j, -0.1762-4.1791e-02j, -0.0260+2.6824e-01j,
-                  -0.1444+1.0882e-01j,  0.1331+2.3433e-04j,  0.1184+4.6386e-02j],
-                 [ 0.0536-6.1462e-02j,  0.1192+1.3104e-01j, -0.1444+1.0882e-01j,
-                  -0.1359-2.2995e-02j,  0.0170-1.1807e-01j,  0.0868-1.4292e-01j],
-                 [-0.0156+2.1492e-01j,  0.0686-1.1056e-03j,  0.1331+2.3433e-04j,
-                   0.0170-1.1807e-01j, -0.0336-1.1453e-01j, -0.2211+4.4966e-02j],
-                 [ 0.2054+5.8940e-02j, -0.1636+6.5585e-02j,  0.1184+4.6386e-02j,
-                   0.0868-1.4292e-01j, -0.2211+4.4966e-02j,  0.0781-1.5134e-01j]]])
+                [[-0.1280+7.3419e-18j, -0.0233+2.9112e-02j, -0.1971+7.3167e-02j,
+                  -0.0638+3.1947e-01j, -0.2302-1.7927e-02j,  0.2307+7.9706e-02j],
+                 [-0.0233-2.9112e-02j, -0.0390-1.5836e-18j,  0.0028-2.0747e-01j,
+                  -0.2302-1.7927e-02j,  0.1097+2.2488e-01j, -0.3193+1.4914e-01j],
+                 [-0.1971-7.3167e-02j,  0.0028+2.0747e-01j,  0.0545-3.4540e-18j,
+                   0.2307+7.9706e-02j, -0.3193+1.4914e-01j, -0.0072+3.9862e-01j],
+                 [ 0.0638+3.1947e-01j,  0.2302-1.7927e-02j, -0.2307+7.9706e-02j,
+                  -0.1280-1.0567e-18j, -0.0233-2.9112e-02j, -0.1971-7.3167e-02j],
+                 [ 0.2302-1.7927e-02j, -0.1097+2.2488e-01j,  0.3193+1.4914e-01j,
+                  -0.0233+2.9112e-02j, -0.0390-3.4049e-19j,  0.0028+2.0747e-01j],
+                 [-0.2307+7.9706e-02j,  0.3193+1.4914e-01j,  0.0072+3.9862e-01j,
+                  -0.1971+7.3167e-02j,  0.0028-2.0747e-01j,  0.0545-1.0322e-17j]]])
     """
     assert rand_cqe in [rand_cqe_svd]
-    q = rand_cqe(n=n,N=lam.size(-1)/2,seed=seed,device=lam.device,qp_unif_gen=qp_unif_gen)
-    assert q.dtype==lam.dtype, "q.dtype = %s but lam.dtype = %s"%(q.dtype,lam.dtype)
-    x = torch.einsum("...ij,...j,...kj->...ik",q,lam,q)
+    assert not torch.is_complex(lam)
+    N = lam.size(-1)
+    q = rand_cqe(n=n,N=N,seed=seed,device=lam.device,qp_unif_gen=qp_unif_gen)
+    I_nn = torch.diag(torch.cat([torch.ones(N,device=lam.device),-torch.ones(N,device=lam.device)])).to(q.dtype)
+    q_H = q.conj().transpose(-2, -1)
+    q_left_corner = torch.einsum("ij,...jk,kl->...il",I_nn,q_H,I_nn)
+    lam_paired = torch.cat([lam,lam],dim=-1)
+    x = torch.einsum("...ij,...j,...jk->...ik",q,lam_paired.to(q.dtype),q_left_corner)
     return x
