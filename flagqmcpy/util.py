@@ -169,22 +169,20 @@ def tff_qr(u):
         >>> torch.set_default_dtype(torch.float64) 
         >>> rng = torch.Generator().manual_seed(7)
 
-        >>> lam = torch.arange(1,5,dtype=float)
+        >>> lam = torch.arange(1,4,dtype=float)
         >>> lam = lam/torch.linalg.norm(lam)
         >>> N = lam.size(-1)
         >>> q = tff_qr(torch.rand((2,N**2),generator=rng))
         >>> q.shape
-        torch.Size([2, 4, 4])
+        torch.Size([2, 3, 3])
         >>> q
-        tensor([[[-0.2996,  0.0109,  0.5127, -0.8045],
-                 [ 0.7289, -0.5403,  0.4203, -0.0110],
-                 [ 0.3670, -0.0490, -0.7150, -0.5930],
-                 [-0.4942, -0.8400, -0.2220,  0.0312]],
+        tensor([[[-0.6554,  0.0144,  0.7552],
+                 [ 0.4522,  0.8083,  0.3771],
+                 [-0.6049,  0.5886, -0.5363]],
         <BLANKLINE>
-                [[-0.7117,  0.3685, -0.1934,  0.5659],
-                 [ 0.4597,  0.6282, -0.6261, -0.0449],
-                 [ 0.4017,  0.4095,  0.6721,  0.4682],
-                 [-0.3476,  0.5494,  0.3447, -0.6771]]])
+                [[ 0.4473, -0.3480, -0.8239],
+                 [-0.6125, -0.7904,  0.0013],
+                 [ 0.6517, -0.5041,  0.5667]]])
     """ 
     N = int(np.round(np.sqrt(u.size(-1))))
     assert u.size(-1)==(N**2)
@@ -197,6 +195,97 @@ def tff_qr(u):
     q = q*d[...,None,:]
     # assert torch.allclose(torch.einsum("...ij,...jk->...ik",q,r*d[...,:,None]),v)
     return q
+
+def tff_qr_complex(u):
+    r"""
+    Examples:
+        >>> torch.set_default_dtype(torch.float64) 
+        >>> rng = torch.Generator().manual_seed(7)
+
+        >>> lam = torch.arange(1,4,dtype=float)
+        >>> lam = lam/torch.linalg.norm(lam)
+        >>> N = lam.size(-1)
+        >>> q = tff_qr_complex(torch.rand((2,2*N**2),generator=rng))
+        >>> q.shape
+        torch.Size([2, 3, 3])
+        >>> q
+        tensor([[[-0.2586-0.2661j,  0.8447-0.1177j,  0.3613+0.0667j],
+                 [-0.2387+0.0676j,  0.2890+0.2913j, -0.5804-0.6582j],
+                 [-0.4265-0.7867j, -0.2891-0.1438j, -0.2795+0.1297j]],
+        <BLANKLINE>
+                [[-0.3620+0.7348j,  0.3715+0.0140j,  0.3549-0.2545j],
+                 [ 0.3698+0.1818j,  0.4820+0.5669j, -0.1691+0.4979j],
+                 [ 0.0229-0.3983j,  0.3680+0.4155j, -0.0743-0.7261j]]])
+    """ 
+    N = int(np.round(np.sqrt(u.size(-1)/2)))
+    assert u.size(-1)==(2*N**2)
+    assert (0<=u).all()
+    assert (u<=1).all()
+    u = u.reshape((*u.shape[:-1],N,N,2))
+    v = agsutil.icdf_std_normal(u)
+    v_complex = torch.complex(v[...,0],v[...,1])
+    q,r = torch.linalg.qr(v_complex)
+    d = torch.diagonal(r,dim1=-2,dim2=-1)
+    ph = d/torch.abs(d)
+    q = q*ph[...,None,:]
+    # assert torch.allclose(torch.einsum("...ij,...jk->...ik",q,r*ph[..., :, None].conj()),v_complex)
+    return q
+
+def tff_svd_quaternionic(u):
+    r"""
+    Examples:
+        >>> torch.set_default_dtype(torch.float64) 
+        >>> rng = torch.Generator().manual_seed(7)
+
+        >>> lam = torch.arange(1,4,dtype=float)
+        >>> lam = lam/torch.linalg.norm(lam)
+        >>> N = lam.size(-1)
+        >>> q = tff_svd_quaternionic(torch.rand((2,4*N**2),generator=rng))
+        >>> q.shape
+        torch.Size([2, 6, 6])
+        >>> q
+        tensor([[[-0.3855-0.0066j,  0.2846+0.1340j,  0.0531+0.4453j, -0.0713-0.0289j,
+                  -0.0862-0.1470j, -0.5170-0.4990j],
+                 [-0.2564-0.3464j, -0.4935+0.2373j,  0.3129-0.0210j, -0.1699+0.2938j,
+                  -0.3639+0.4087j, -0.0355-0.0141j],
+                 [ 0.4523+0.2013j, -0.3856+0.2435j,  0.2998+0.1332j,  0.5145+0.1862j,
+                   0.0854-0.2397j, -0.1482-0.2306j],
+                 [ 0.0713-0.0289j,  0.0862-0.1470j,  0.5170-0.4990j, -0.3855+0.0066j,
+                   0.2846-0.1340j,  0.0531-0.4453j],
+                 [ 0.1699+0.2938j,  0.3639+0.4087j,  0.0355-0.0141j, -0.2564+0.3464j,
+                  -0.4935-0.2373j,  0.3129+0.0210j],
+                 [-0.5145+0.1862j, -0.0854-0.2397j,  0.1482-0.2306j,  0.4523-0.2013j,
+                  -0.3856-0.2435j,  0.2998-0.1332j]],
+        <BLANKLINE>
+                [[-0.4396-0.3859j, -0.1858+0.4638j, -0.1706-0.4717j,  0.1578-0.1175j,
+                  -0.1740+0.0735j,  0.2780-0.0707j],
+                 [ 0.0092+0.2218j, -0.1126+0.4596j,  0.3860+0.1825j, -0.4997-0.0507j,
+                   0.0025+0.3514j,  0.2753+0.3050j],
+                 [ 0.3743+0.2976j,  0.2388+0.3247j,  0.0849-0.3571j,  0.2850-0.0874j,
+                  -0.4425+0.0953j, -0.3876+0.1736j],
+                 [-0.1578-0.1175j,  0.1740+0.0735j, -0.2780-0.0707j, -0.4396+0.3859j,
+                  -0.1858-0.4638j, -0.1706+0.4717j],
+                 [ 0.4997-0.0507j, -0.0025+0.3514j, -0.2753+0.3050j,  0.0092-0.2218j,
+                  -0.1126-0.4596j,  0.3860-0.1825j],
+                 [-0.2850-0.0874j,  0.4425+0.0953j,  0.3876+0.1736j,  0.3743-0.2976j,
+                   0.2388-0.3247j,  0.0849+0.3571j]]])
+    """ 
+    N = int(np.round(np.sqrt(u.size(-1)/4)))
+    assert u.size(-1)==(4*N**2)
+    assert (0<=u).all()
+    assert (u<=1).all()
+    u = u.reshape((*u.shape[:-1],N,N,4))
+    v = agsutil.icdf_std_normal(u)
+    B = torch.complex(v[..., 0],v[..., 1])
+    C = torch.complex(v[..., 2],v[..., 3])
+    v_symplectic = torch.cat([
+        torch.cat([B,              C            ], dim=-1),
+        torch.cat([-torch.conj(C), torch.conj(B)], dim=-1)], dim=-2)
+    U,_,Vh = torch.linalg.svd(v_symplectic)
+    q = torch.einsum("...ij,...jk->...ik",U,Vh)
+    # assert torch.allclose(torch.einsum("...ij,...kj->...ik",q,torch.conj(q)),torch.eye(2*N,dtype=q.dtype).expand_as(q))
+    return q
+
 
 def tff_eig(u):
     r"""
