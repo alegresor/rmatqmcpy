@@ -687,8 +687,133 @@ def rand_flag_quaternionic(n, lam, seed=None, rand_cqe=rand_cqe_svd, qp_unif_gen
     N = lam.size(-1)
     q = rand_cqe(n=n,N=N,seed=seed,device=lam.device,qp_unif_gen=qp_unif_gen)
     I_nn = torch.diag(torch.cat([torch.ones(N,device=lam.device),-torch.ones(N,device=lam.device)])).to(q.dtype)
-    q_H = q.conj().transpose(-2, -1)
+    q_H = q.conj().transpose(-2,-1)
     q_left_corner = torch.einsum("ij,...jk,kl->...il",I_nn,q_H,I_nn)
     lam_paired = torch.cat([lam,lam],dim=-1)
     x = torch.einsum("...ij,...j,...jk->...ik",q,lam_paired.to(q.dtype),q_left_corner)
+    return x
+
+def rand_lgr_real(n, N, seed=None, rand_cue=rand_cue_qr, qp_unif_gen=qp.IIDStdUniform, device="cpu"):
+    r"""
+    Examples:
+        >>> torch.set_default_dtype(torch.float64) 
+
+        >>> x = rand_lgr_real(2,3,seed=7)
+        >>> x.shape 
+        torch.Size([2, 3, 3])
+        >>> x
+        tensor([[[ 0.5347-0.6183j, -0.4216+0.1853j,  0.3367+0.0794j],
+                 [-0.4216+0.1853j, -0.7076-0.3250j,  0.3573-0.2321j],
+                 [ 0.3367+0.0794j,  0.3573-0.2321j,  0.3638-0.7526j]],
+        <BLANKLINE>
+                [[ 0.1151+0.8999j, -0.0811+0.0124j,  0.3417+0.2311j],
+                 [-0.0811+0.0124j,  0.1517+0.9848j, -0.0134+0.0125j],
+                 [ 0.3417+0.2311j, -0.0134+0.0125j, -0.8817+0.2282j]]])
+    """
+    assert rand_cue in [rand_cue_qr,rand_cue_eig]
+    q = rand_cue(n=n,N=N,seed=seed,device=device,qp_unif_gen=qp_unif_gen)
+    x = torch.einsum("...ij,...kj->...ik",q,q)
+    return x
+
+def rand_lgr_complex(n, N, seed=None, rand_cqe=rand_cqe_svd, qp_unif_gen=qp.IIDStdUniform, device="cpu"):
+    r"""
+    Examples:
+        >>> torch.set_default_dtype(torch.float64) 
+
+        >>> x = rand_lgr_complex(2,3,seed=7)
+        >>> x.shape 
+        torch.Size([2, 6, 6])
+        >>> x
+        tensor([[[ 0.2639-7.9359e-18j,  0.0442+5.5899e-01j,  0.4301+3.4425e-01j,
+                  -0.3209-2.2301e-01j, -0.3178+3.2318e-02j, -0.2092-1.1822e-01j],
+                 [ 0.0442-5.5899e-01j, -0.0769+3.8263e-18j, -0.2988+1.9049e-01j,
+                  -0.3178+3.2318e-02j, -0.2813-1.8180e-01j,  0.3129+4.9186e-01j],
+                 [ 0.4301-3.4425e-01j, -0.2988-1.9049e-01j, -0.0221-4.2245e-18j,
+                  -0.2092-1.1822e-01j,  0.3129+4.9186e-01j,  0.1832-3.7322e-01j],
+                 [ 0.3209-2.2301e-01j,  0.3178+3.2318e-02j,  0.2092-1.1822e-01j,
+                   0.2639-7.8001e-19j,  0.0442-5.5899e-01j,  0.4301-3.4425e-01j],
+                 [ 0.3178+3.2318e-02j,  0.2813-1.8180e-01j, -0.3129+4.9186e-01j,
+                   0.0442+5.5899e-01j, -0.0769+7.7828e-18j, -0.2988-1.9049e-01j],
+                 [ 0.2092-1.1822e-01j, -0.3129+4.9186e-01j, -0.1832-3.7322e-01j,
+                   0.4301+3.4425e-01j, -0.2988+1.9049e-01j, -0.0221-4.0791e-19j]],
+        <BLANKLINE>
+                [[-0.0856-3.2862e-19j, -0.1772+3.7134e-02j, -0.3202+5.2632e-02j,
+                  -0.3455+5.4650e-01j, -0.4689+1.6720e-01j,  0.4316-4.9969e-02j],
+                 [-0.1772-3.7134e-02j, -0.0281-1.5561e-17j,  0.0949-2.1709e-01j,
+                  -0.4689+1.6720e-01j,  0.2348+5.8431e-01j, -0.4891+1.6327e-01j],
+                 [-0.3202-5.2632e-02j,  0.0949+2.1709e-01j,  0.0069+9.9286e-18j,
+                   0.4316-4.9969e-02j, -0.4891+1.6327e-01j, -0.1544+5.9999e-01j],
+                 [ 0.3455+5.4650e-01j,  0.4689+1.6720e-01j, -0.4316-4.9969e-02j,
+                  -0.0856-3.2568e-19j, -0.1772-3.7134e-02j, -0.3202-5.2632e-02j],
+                 [ 0.4689+1.6720e-01j, -0.2348+5.8431e-01j,  0.4891+1.6327e-01j,
+                  -0.1772+3.7134e-02j, -0.0281+4.0250e-18j,  0.0949+2.1709e-01j],
+                 [-0.4316-4.9969e-02j,  0.4891+1.6327e-01j,  0.1544+5.9999e-01j,
+                  -0.3202+5.2632e-02j,  0.0949-2.1709e-01j,  0.0069+7.0304e-18j]]])
+    """
+    assert rand_cqe in [rand_cqe_svd]
+    q = rand_cqe(n=n,N=N,seed=seed,device=device,qp_unif_gen=qp_unif_gen)
+    I_nn = torch.diag(torch.cat([
+        torch.ones(N, device=device), 
+        -torch.ones(N, device=device)
+    ])).to(q.dtype)
+    q_left_corner = torch.einsum("ij,...kj,kl->...il",I_nn,q.conj(),I_nn)
+    x = torch.einsum("...ij,...jk->...ik",q,q_left_corner)
+    return x
+
+def rand_lgr_quaternionic(n, N, seed=None, rand_cue=rand_cue_qr, qp_unif_gen=qp.IIDStdUniform, device="cpu"):
+    r"""
+    Examples:
+        >>> torch.set_default_dtype(torch.float64) 
+
+        >>> x = rand_lgr_quaternionic(2,3,seed=7)
+        >>> x.shape 
+        torch.Size([2, 6, 6])
+        >>> x
+        tensor([[[ 2.5247e-01+4.8347e-01j,  3.4980e-01+2.3734e-01j,
+                   7.5075e-03+2.6047e-01j,  0.0000e+00+0.0000e+00j,
+                  -7.2170e-02+4.4745e-02j, -5.6447e-02+6.6748e-01j],
+                 [-1.0678e-01+5.1706e-01j, -1.1949e-01+1.1555e-02j,
+                   6.6054e-01+3.1069e-01j,  7.2170e-02-4.4745e-02j,
+                  -2.7756e-17-6.9389e-18j,  1.0066e-01-3.9577e-01j],
+                 [-8.7722e-02-3.6494e-01j,  1.2170e-01+4.2823e-01j,
+                   1.8402e-01+1.0760e-01j,  5.6447e-02-6.6748e-01j,
+                  -1.0066e-01+3.9577e-01j, -2.7756e-17+5.5511e-17j],
+                 [ 0.0000e+00-1.7347e-17j,  5.0421e-01+1.2107e-01j,
+                  -1.1748e-01+1.3714e-02j,  2.5247e-01+4.8347e-01j,
+                  -1.0678e-01+5.1706e-01j, -8.7722e-02-3.6494e-01j],
+                 [-5.0421e-01-1.2107e-01j,  0.0000e+00-2.0817e-17j,
+                   4.1953e-01-4.0474e-01j,  3.4980e-01+2.3734e-01j,
+                  -1.1949e-01+1.1555e-02j,  1.2170e-01+4.2823e-01j],
+                 [ 1.1748e-01-1.3714e-02j, -4.1953e-01+4.0474e-01j,
+                   1.3878e-17+3.4694e-18j,  7.5075e-03+2.6047e-01j,
+                   6.6054e-01+3.1069e-01j,  1.8402e-01+1.0760e-01j]],
+        <BLANKLINE>
+                [[ 3.6412e-02+3.1625e-01j, -9.1901e-02+2.6565e-01j,
+                  -3.1840e-01+4.5073e-01j,  0.0000e+00+0.0000e+00j,
+                  -3.4023e-02-2.4849e-01j, -1.3301e-01+6.5917e-01j],
+                 [-2.3938e-01+8.6599e-02j,  1.3297e-02-2.6840e-01j,
+                  -6.4712e-01+8.0420e-02j,  3.4023e-02+2.4849e-01j,
+                   1.3878e-17+0.0000e+00j,  5.8903e-01-1.6701e-01j],
+                 [ 8.4276e-02-2.2696e-01j, -1.3807e-01-2.0000e-02j,
+                  -3.0627e-01-3.2671e-02j,  1.3301e-01-6.5917e-01j,
+                  -5.8903e-01+1.6701e-01j,  8.6736e-18-1.7347e-18j],
+                 [ 8.6736e-18+1.3878e-17j, -1.6050e-01+8.2996e-01j,
+                  -1.1590e-01-2.1730e-01j,  3.6412e-02+3.1625e-01j,
+                  -2.3938e-01+8.6599e-02j,  8.4276e-02-2.2696e-01j],
+                 [ 1.6050e-01-8.2996e-01j, -9.5410e-18-2.7756e-17j,
+                  -1.5645e-01+3.0039e-01j, -9.1901e-02+2.6565e-01j,
+                   1.3297e-02-2.6840e-01j, -1.3807e-01-2.0000e-02j],
+                 [ 1.1590e-01+2.1730e-01j,  1.5645e-01-3.0039e-01j,
+                   0.0000e+00+0.0000e+00j, -3.1840e-01+4.5073e-01j,
+                  -6.4712e-01+8.0420e-02j, -3.0627e-01-3.2671e-02j]]])
+    """
+    assert rand_cue in [rand_cue_qr,rand_cue_eig]
+    q = rand_cue(n=n,N=2*N,seed=seed,device=device,qp_unif_gen=qp_unif_gen)
+    I_N = torch.eye(N,device=device,dtype=q.dtype)
+    O_N = torch.zeros(N,N,device=device,dtype=q.dtype)
+    J = torch.cat([
+        torch.cat([ O_N,I_N],dim=-1),
+        torch.cat([-I_N,O_N],dim=-1)],dim=-2)
+    q_S = -torch.einsum("ij,...kj,kl->...il",J,q,J)
+    x = torch.einsum("...ij,...jk->...ik",q,q_S)
     return x
