@@ -286,7 +286,6 @@ def tff_svd_quaternionic(u):
     # assert torch.allclose(torch.einsum("...ij,...kj->...ik",q,torch.conj(q)),torch.eye(2*N,dtype=q.dtype).expand_as(q))
     return q
 
-
 def tff_eig(u):
     r"""
     Examples:
@@ -296,25 +295,29 @@ def tff_eig(u):
         >>> lam = torch.arange(1,5,dtype=float)
         >>> lam = lam/torch.linalg.norm(lam)
         >>> N = lam.size(-1)
-        >>> q = tff_eig(torch.rand((2,N*(N+1)//2+N),generator=rng))
+        >>> q = tff_eig(torch.rand((2,N*(N+1)//2+2*N),generator=rng))
         >>> q.shape
         torch.Size([2, 4, 4])
         >>> q
-        tensor([[[-0.6609, -0.6009, -0.2925,  0.3413],
-                 [ 0.6756, -0.3757, -0.6245,  0.1115],
-                 [ 0.2735, -0.0652,  0.4832,  0.8291],
-                 [-0.1787,  0.7025, -0.5394,  0.4285]],
+        tensor([[[-0.2925, -0.6609, -0.6009,  0.3413],
+                 [-0.6245,  0.6756, -0.3757,  0.1115],
+                 [ 0.4832,  0.2735, -0.0652,  0.8291],
+                 [-0.5394, -0.1787,  0.7025,  0.4285]],
         <BLANKLINE>
-                [[ 0.5858, -0.7351, -0.2483,  0.2341],
-                 [ 0.2611, -0.0613,  0.9497,  0.1614],
-                 [-0.7540, -0.6354,  0.1565,  0.0576],
-                 [-0.1419,  0.2284, -0.1089,  0.9570]]])
-    """ 
-    N = int(np.round((-3+np.sqrt(9+8*u.size(-1)))/2))
-    assert u.size(-1)==(N*(N+1)//2+N)
+                [[ 0.0554,  0.2047,  0.9616,  0.1740],
+                 [ 0.7688,  0.4471, -0.0574, -0.4536],
+                 [ 0.4338, -0.8694,  0.1864, -0.1453],
+                 [ 0.4666,  0.0474, -0.1929,  0.8619]]])
+    """
+    N = int(np.round((-5+np.sqrt(25+8*u.size(-1)))/2))
+    assert u.size(-1)==(N*(N+1)//2+2*N)
+    assert (0<=u).all()
+    assert (u<=1).all()
+    num_tril = N*(N-1)//2
     alpha = agsutil.icdf_std_normal(u[...,:N])
-    beta = agsutil.icdf_std_normal(u[...,N:(-N)])/np.sqrt(2)
-    signs = torch.where(u[...,(-N):]>1/2,1.,-1.).to(u.device)
+    beta = agsutil.icdf_std_normal(u[...,N:N+num_tril])/np.sqrt(2)
+    signs = torch.where(u[...,N+num_tril:N+num_tril+N]>1/2,1.,-1.).to(u.device)
+    perms = u[...,N+num_tril+N:].argsort(-1)
     il0,il1 = torch.tril_indices(N,N,offset=-1,device=u.device)
     v = torch.eye(N,device=u.device)*alpha[...,None]
     v[...,il0,il1] = beta
@@ -324,6 +327,7 @@ def tff_eig(u):
     q = q*signs[...,None,:] # this is required because torch.eigh pins the sign to make the largest entry of each eigenvector positive
     # assert torch.allclose(torch.einsum("...ij,...kj->...ik",q,q),torch.eye(N,device=u.device))
     # assert torch.allclose(torch.einsum("...ij,...j,...kj->...ik",q,gamma,q),v)
+    q = torch.gather(q,dim=-1,index=perms[...,None,:].expand_as(q))
     return q
 
 def genflag_q_qr_iid(n, N, seed=None, device="cpu"):
@@ -379,16 +383,16 @@ def genflag_q_eig_iid(n, N, seed=None, device="cpu"):
         >>> q.shape 
         torch.Size([2, 3, 3])
         >>> q
-        tensor([[[-0.8731,  0.2775, -0.4010],
-                 [-0.1607, -0.9401, -0.3006],
-                 [ 0.4604,  0.1980, -0.8654]],
+        tensor([[[-0.4010,  0.2775, -0.8731],
+                 [-0.3006, -0.9401, -0.1607],
+                 [-0.8654,  0.1980,  0.4604]],
         <BLANKLINE>
-                [[-0.3612, -0.1422,  0.9216],
-                 [-0.6025,  0.7899, -0.1143],
-                 [-0.7117, -0.5966, -0.3710]]])
+                [[-0.6765,  0.5182, -0.5232],
+                 [ 0.1492,  0.7922,  0.5917],
+                 [ 0.7211,  0.3223, -0.6133]]])
     """
     rng = agsutil.get_torch_rng(seed,device=device)
-    u = torch.rand((n,N*(N+1)//2+N),generator=rng,device=device)
+    u = torch.rand((n,N*(N+1)//2+2*N),generator=rng,device=device)
     q = tff_eig(u)
     return q
 
@@ -401,15 +405,15 @@ def genflag_q_eig_ld(n, N, seed=None, device="cpu"):
         >>> q.shape 
         torch.Size([2, 3, 3])
         >>> q
-        tensor([[[ 0.6810, -0.6446,  0.3475],
-                 [ 0.7200,  0.6759, -0.1572],
-                 [ 0.1336, -0.3573, -0.9244]],
+        tensor([[[ 0.2150, -0.7427,  0.6341],
+                 [-0.9324,  0.0370,  0.3595],
+                 [ 0.2905,  0.6685,  0.6846]],
         <BLANKLINE>
-                [[-0.3383,  0.2749, -0.9000],
-                 [ 0.2543, -0.8941, -0.3687],
-                 [ 0.9060,  0.3536, -0.2326]]])
+                [[ 0.9117, -0.0349,  0.4094],
+                 [ 0.2656,  0.8102, -0.5226],
+                 [ 0.3134, -0.5851, -0.7479]]])
     """
-    u = torch.from_numpy(qmcpy.DigitalNetB2(N*(N+1)//2+N,seed=seed,randomize="LMS_DS",order="GRAY")(n)).to(device)
+    u = torch.from_numpy(qmcpy.DigitalNetB2(N*(N+1)//2+2*N,seed=seed,randomize="LMS_DS",order="GRAY")(n)).to(device)
     q = tff_eig(u)
     return q
 
@@ -476,13 +480,13 @@ def genflag_q_eig_iid_equal_w(n, N, seed=None, device="cpu"):
         >>> q.shape 
         torch.Size([2, 3, 3])
         >>> q
-        tensor([[[-0.8731,  0.2775, -0.4010],
-                 [-0.1607, -0.9401, -0.3006],
-                 [ 0.4604,  0.1980, -0.8654]],
+        tensor([[[-0.4010,  0.2775, -0.8731],
+                 [-0.3006, -0.9401, -0.1607],
+                 [-0.8654,  0.1980,  0.4604]],
         <BLANKLINE>
-                [[-0.3612, -0.1422,  0.9216],
-                 [-0.6025,  0.7899, -0.1143],
-                 [-0.7117, -0.5966, -0.3710]]])
+                [[-0.6765,  0.5182, -0.5232],
+                 [ 0.1492,  0.7922,  0.5917],
+                 [ 0.7211,  0.3223, -0.6133]]])
         >>> w.shape 
         torch.Size([2])
         >>> w
@@ -503,13 +507,13 @@ def genflag_q_eig_ld_equal_w(n, N, seed=None, device="cpu"):
         >>> q.shape 
         torch.Size([2, 3, 3])
         >>> q
-        tensor([[[ 0.6810, -0.6446,  0.3475],
-                 [ 0.7200,  0.6759, -0.1572],
-                 [ 0.1336, -0.3573, -0.9244]],
+        tensor([[[ 0.2150, -0.7427,  0.6341],
+                 [-0.9324,  0.0370,  0.3595],
+                 [ 0.2905,  0.6685,  0.6846]],
         <BLANKLINE>
-                [[-0.3383,  0.2749, -0.9000],
-                 [ 0.2543, -0.8941, -0.3687],
-                 [ 0.9060,  0.3536, -0.2326]]])
+                [[ 0.9117, -0.0349,  0.4094],
+                 [ 0.2656,  0.8102, -0.5226],
+                 [ 0.3134, -0.5851, -0.7479]]])
         >>> w.shape 
         torch.Size([2])
         >>> w
@@ -578,13 +582,13 @@ def genflag_x_eig_iid(n, lam, seed=None):
         >>> x.shape 
         torch.Size([2, 3, 3])
         >>> x
-        tensor([[[ 0.3738, -0.0053,  0.2002],
-                 [-0.0053,  0.5518,  0.0893],
-                 [ 0.2002,  0.0893,  0.6780]],
+        tensor([[[ 0.6953,  0.0053, -0.2002],
+                 [ 0.0053,  0.5173, -0.0893],
+                 [-0.2002, -0.0893,  0.3910]],
         <BLANKLINE>
-                [[ 0.7266, -0.0863, -0.1601],
-                 [-0.0863,  0.4410, -0.1033],
-                 [-0.1601, -0.1033,  0.4359]]])
+                [[ 0.4854, -0.0558,  0.2161],
+                 [-0.0558,  0.6222, -0.1257],
+                 [ 0.2161, -0.1257,  0.4961]]])
     """
     q = genflag_q_eig_iid(n,lam.size(-1),seed,lam.device)
     x = torch.einsum("...ij,...j,...kj->...ik",q,lam,q)
@@ -601,13 +605,13 @@ def genflag_x_eig_ld(n, lam, seed=None):
         >>> x.shape 
         torch.Size([2, 3, 3])
         >>> x
-        tensor([[[ 0.4428, -0.1456, -0.1102],
-                 [-0.1456,  0.4026,  0.0131],
-                 [-0.1102,  0.0131,  0.7581]],
+        tensor([[[ 0.6296,  0.1145,  0.0993],
+                 [ 0.1145,  0.3367,  0.1382],
+                 [ 0.0993,  0.1382,  0.6372]],
         <BLANKLINE>
-                [[ 0.7204,  0.1117,  0.1379],
-                 [ 0.1117,  0.5536, -0.0387],
-                 [ 0.1379, -0.0387,  0.3296]]])
+                [[ 0.3572, -0.1219, -0.1582],
+                 [-0.1219,  0.5886,  0.0822],
+                 [-0.1582,  0.0822,  0.6578]]])
     """
     q = genflag_q_eig_ld(n,lam.size(-1),seed,lam.device)
     x = torch.einsum("...ij,...j,...kj->...ik",q,lam,q)
@@ -678,13 +682,13 @@ def genflag_x_eig_iid_equal_w(n, lam, seed=None):
         >>> x.shape 
         torch.Size([2, 3, 3])
         >>> x
-        tensor([[[ 0.3738, -0.0053,  0.2002],
-                 [-0.0053,  0.5518,  0.0893],
-                 [ 0.2002,  0.0893,  0.6780]],
+        tensor([[[ 0.6953,  0.0053, -0.2002],
+                 [ 0.0053,  0.5173, -0.0893],
+                 [-0.2002, -0.0893,  0.3910]],
         <BLANKLINE>
-                [[ 0.7266, -0.0863, -0.1601],
-                 [-0.0863,  0.4410, -0.1033],
-                 [-0.1601, -0.1033,  0.4359]]])
+                [[ 0.4854, -0.0558,  0.2161],
+                 [-0.0558,  0.6222, -0.1257],
+                 [ 0.2161, -0.1257,  0.4961]]])
         >>> w.shape 
         torch.Size([2])
         >>> w
@@ -705,13 +709,13 @@ def genflag_x_eig_ld_equal_w(n, lam, seed=None):
         >>> x.shape 
         torch.Size([2, 3, 3])
         >>> x
-        tensor([[[ 0.4428, -0.1456, -0.1102],
-                 [-0.1456,  0.4026,  0.0131],
-                 [-0.1102,  0.0131,  0.7581]],
+        tensor([[[ 0.6296,  0.1145,  0.0993],
+                 [ 0.1145,  0.3367,  0.1382],
+                 [ 0.0993,  0.1382,  0.6372]],
         <BLANKLINE>
-                [[ 0.7204,  0.1117,  0.1379],
-                 [ 0.1117,  0.5536, -0.0387],
-                 [ 0.1379, -0.0387,  0.3296]]])
+                [[ 0.3572, -0.1219, -0.1582],
+                 [-0.1219,  0.5886,  0.0822],
+                 [-0.1582,  0.0822,  0.6578]]])
         >>> w.shape 
         torch.Size([2])
         >>> w
