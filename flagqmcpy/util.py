@@ -292,22 +292,20 @@ def tff_eig(u):
         >>> torch.set_default_dtype(torch.float64) 
         >>> rng = torch.Generator().manual_seed(7)
 
-        >>> lam = torch.arange(1,5,dtype=float)
+        >>> lam = torch.arange(1,4,dtype=float)
         >>> lam = lam/torch.linalg.norm(lam)
         >>> N = lam.size(-1)
         >>> q = tff_eig(torch.rand((2,N*(N+1)//2+2*N),generator=rng))
         >>> q.shape
-        torch.Size([2, 4, 4])
+        torch.Size([2, 3, 3])
         >>> q
-        tensor([[[-0.2925, -0.6609, -0.6009,  0.3413],
-                 [-0.6245,  0.6756, -0.3757,  0.1115],
-                 [ 0.4832,  0.2735, -0.0652,  0.8291],
-                 [-0.5394, -0.1787,  0.7025,  0.4285]],
+        tensor([[[-0.4010,  0.2775, -0.8731],
+                 [-0.3006, -0.9401, -0.1607],
+                 [-0.8654,  0.1980,  0.4604]],
         <BLANKLINE>
-                [[ 0.0554,  0.2047,  0.9616,  0.1740],
-                 [ 0.7688,  0.4471, -0.0574, -0.4536],
-                 [ 0.4338, -0.8694,  0.1864, -0.1453],
-                 [ 0.4666,  0.0474, -0.1929,  0.8619]]])
+                [[-0.6765,  0.5182, -0.5232],
+                 [ 0.1492,  0.7922,  0.5917],
+                 [ 0.7211,  0.3223, -0.6133]]])
     """
     N = int(np.round((-5+np.sqrt(25+8*u.size(-1)))/2))
     assert u.size(-1)==(N*(N+1)//2+2*N)
@@ -324,12 +322,57 @@ def tff_eig(u):
     v += v.tril(-1).transpose(dim0=-2,dim1=-1)
     # assert torch.allclose(v[...,torch.arange(N,device=u.device),torch.arange(N,device=u.device)],alpha)
     gamma,q = torch.linalg.eigh(v)
-    q = q*signs[...,None,:] # this is required because torch.eigh pins the sign to make the largest entry of each eigenvector positive
+    q = q*signs[...,None,:]
     # assert torch.allclose(torch.einsum("...ij,...kj->...ik",q,q),torch.eye(N,device=u.device))
     # assert torch.allclose(torch.einsum("...ij,...j,...kj->...ik",q,gamma,q),v)
     q = torch.gather(q,dim=-1,index=perms[...,None,:].expand_as(q))
     return q
 
+def tff_eig_complex(u):
+    r"""
+    Examples:
+        >>> torch.set_default_dtype(torch.float64) 
+        >>> rng = torch.Generator().manual_seed(7)
+
+        >>> lam = torch.arange(1,4,dtype=float)
+        >>> lam = lam/torch.linalg.norm(lam)
+        >>> N = lam.size(-1)
+        >>> q = tff_eig_complex(torch.rand((2,N**2+2*N),generator=rng))
+        >>> q.shape
+        torch.Size([2, 3, 3])
+        >>> q
+        tensor([[[ 0.4933+0.2062j, -0.3761-0.1423j,  0.0437-0.7420j],
+                 [-0.1455-0.7220j, -0.3441+0.1009j,  0.5631-0.1091j],
+                 [-0.3802+0.1649j, -0.7717-0.3380j, -0.2524+0.2341j]],
+        <BLANKLINE>
+                [[-0.0814-0.6795j, -0.2821+0.2191j, -0.6032+0.2004j],
+                 [ 0.0860+0.4265j, -0.3979+0.7882j, -0.0729-0.1606j],
+                 [-0.1979+0.5507j,  0.1467-0.2669j, -0.7512+0.0238j]]])
+    """
+    N = int(np.round((-1+np.sqrt(1+u.size(-1)))))
+    assert u.size(-1)==(N**2+2*N)
+    assert (0<=u).all()
+    assert (u<=1).all()
+    num_tril = N*(N-1)//2
+    alpha = agsutil.icdf_std_normal(u[...,:N])
+    beta = torch.complex(
+        agsutil.icdf_std_normal(u[...,N:N+num_tril])/np.sqrt(2),
+        agsutil.icdf_std_normal(u[...,N+num_tril:N+2*num_tril])/np.sqrt(2))
+    theta = 2*np.pi*u[...,N+2*num_tril:N+2*num_tril+N]
+    perms = u[...,N+2*num_tril+N:].argsort(-1)
+    il0,il1 = torch.tril_indices(N,N,offset=-1,device=u.device)
+    v = torch.eye(N,device=u.device,dtype=beta.dtype)*alpha[...,None].to(beta.dtype)
+    v[...,il0,il1] = beta
+    v += v.tril(-1).conj().transpose(dim0=-2,dim1=-1)
+    # assert torch.allclose(v[...,torch.arange(N,device=u.device),torch.arange(N,device=u.device)],alpha.to(v.dtype))
+    gamma,q = torch.linalg.eigh(v)
+    phases = torch.complex(torch.cos(theta),torch.sin(theta))
+    q = q*phases[...,None,:]
+    # assert torch.allclose(torch.einsum("...ij,...kj->...ik",q,q.conj()),torch.eye(N,device=u.device,dtype=q.dtype))
+    # assert torch.allclose(torch.einsum("...ij,...j,...kj->...ik",q,gamma,q.conj()),v)
+    q = torch.gather(q,dim=-1,index=perms[...,None,:].expand_as(q))
+    return q
+    
 def genflag_q_qr_iid(n, N, seed=None, device="cpu"):
     r"""
     Examples:
