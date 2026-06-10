@@ -17,7 +17,7 @@ def compute_tau_int_traceXY_topow_r(lam, r):
         r (int): The power to which the trace is raised.
 
     Returns:
-        torch.Tensor: A tensor of shape `(r+1,)` containing the expected values for powers `0` to `r`.
+        tau (torch.Tensor): A tensor of shape `(r+1,)` containing the expected values for powers `0` to `r`.
 
     Examples:
         >>> torch.set_default_dtype(torch.float64) 

@@ -23,7 +23,7 @@ def rand_coe_qr(N, n, seed=None, device="cpu", qp_unif_gen=qp.IIDStdUniform):
         qp_unif_gen (qmcpy.DiscreteDistribution, optional): QMCPy distribution generator.
 
     Returns:
-        torch.Tensor: A batch of `N` random orthogonal matrices of size `(n, n)`.
+        x (torch.Tensor): A batch of `N` random orthogonal matrices of size `(N, n, n)`.
     
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
@@ -70,7 +70,7 @@ def rand_cue_qr(N, n, seed=None, device="cpu", qp_unif_gen=qp.IIDStdUniform):
         qp_unif_gen (qmcpy.DiscreteDistribution, optional): QMCPy distribution generator.
 
     Returns:
-        torch.Tensor: A batch of `N` random unitary matrices of size `(n, n)`.
+        x (torch.Tensor): A batch of `N` random unitary matrices of size `(N, n, n)`.
     
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
@@ -116,7 +116,7 @@ def rand_coe_eig(N, n, seed=None, device="cpu", qp_unif_gen=qp.IIDStdUniform):
         qp_unif_gen (qmcpy.DiscreteDistribution, optional): QMCPy distribution generator.
 
     Returns:
-        torch.Tensor: A batch of `N` random orthogonal matrices of size `(n, n)`.
+        x (torch.Tensor): A batch of `N` random orthogonal matrices of size `(N, n, n)`.
     
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
@@ -161,7 +161,7 @@ def rand_cue_eig(N, n, seed=None, device="cpu", qp_unif_gen=qp.IIDStdUniform):
         qp_unif_gen (qmcpy.DiscreteDistribution, optional): QMCPy distribution generator.
 
     Returns:
-        torch.Tensor: A batch of `N` random unitary matrices of size `(n, n)`.
+        x (torch.Tensor): A batch of `N` random unitary matrices of size `(N, n, n)`.
     
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
@@ -206,7 +206,7 @@ def rand_cqe_svd(N, n, seed=None, device="cpu", qp_unif_gen=qp.IIDStdUniform):
         qp_unif_gen (qmcpy.DiscreteDistribution, optional): QMCPy distribution generator.
 
     Returns:
-        torch.Tensor: A batch of `N` random symplectic unitary matrices of size `(2n, 2n)`.
+        x (torch.Tensor): A batch of `N` random symplectic unitary matrices of size `(N, 2n, 2n)`.
     
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
@@ -287,7 +287,7 @@ def rand_flag_real(N, lam, seed=None, rand_coe=rand_coe_qr, qp_unif_gen=qp.IIDSt
         qp_unif_gen (qmcpy.DiscreteDistribution, optional): QMCPy distribution generator.
 
     Returns:
-        torch.Tensor: A batch of `N` random real flag matrices of size `(n, n)`.
+        x (torch.Tensor): A batch of `N` random real flag matrices of size `(N, n, n)`.
     
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
@@ -324,7 +324,7 @@ def rand_flag_complex(N, lam, seed=None, rand_cue=rand_cue_qr, qp_unif_gen=qp.II
         qp_unif_gen (qmcpy.DiscreteDistribution, optional): QMCPy distribution generator.
 
     Returns:
-        torch.Tensor: A batch of `N` random complex flag matrices of size `(n, n)`.
+        x (torch.Tensor): A batch of `N` random complex flag matrices of size `(N, n, n)`.
 
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
@@ -361,7 +361,7 @@ def rand_flag_quaternionic(N, lam, seed=None, rand_cqe=rand_cqe_svd, qp_unif_gen
         qp_unif_gen (qmcpy.DiscreteDistribution, optional): QMCPy distribution generator.
 
     Returns:
-        torch.Tensor: A batch of `N` random quaternionic flag matrices of size `(2n, 2n)`.
+        x (torch.Tensor): A batch of `N` random quaternionic flag matrices of size `(N, 2n, 2n)`.
 
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
@@ -422,7 +422,7 @@ def rand_lgr_real(N, n, seed=None, rand_cue=rand_cue_qr, qp_unif_gen=qp.IIDStdUn
         device (str, optional): Device to store the tensor on.
 
     Returns:
-        torch.Tensor: A batch of `N` random real Lagrangian Grassmannian matrices of size `(n, n)`.
+        x (torch.Tensor): A batch of `N` random real Lagrangian Grassmannian matrices of size `(N, n, n)`.
 
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
@@ -457,7 +457,7 @@ def rand_lgr_complex(N, n, seed=None, rand_cqe=rand_cqe_svd, qp_unif_gen=qp.IIDS
         device (str, optional): Device to store the tensor on.
 
     Returns:
-        torch.Tensor: A batch of `N` random complex Lagrangian Grassmannian matrices of size `(2n, 2n)`.
+        x (torch.Tensor): A batch of `N` random complex Lagrangian Grassmannian matrices of size `(N, 2n, 2n)`.
 
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
@@ -515,7 +515,7 @@ def rand_lgr_quaternionic(N, n, seed=None, rand_cue=rand_cue_qr, qp_unif_gen=qp.
         device (str, optional): Device to store the tensor on.
 
     Returns:
-        torch.Tensor: A batch of `N` random quaternionic Lagrangian Grassmannian matrices of size `(2n, 2n)`.
+        x (torch.Tensor): A batch of `N` random quaternionic Lagrangian Grassmannian matrices of size `(N, 2n, 2n)`.
 
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
@@ -575,7 +575,7 @@ def rand_stiefel_real(N, n, k, seed=None, rand_coe=rand_coe_qr, qp_unif_gen=qp.I
         device (str, optional): Device to store the tensor on.
 
     Returns:
-        torch.Tensor: A batch of `N` random real Stiefel matrices of size `(n, k)`.
+        x (torch.Tensor): A batch of `N` random real Stiefel matrices of size `(N, n, k)`.
 
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
@@ -613,7 +613,7 @@ def rand_stiefel_complex(N, n, k, seed=None, rand_cue=rand_cue_qr, qp_unif_gen=q
         device (str, optional): Device to store the tensor on.
 
     Returns:
-        torch.Tensor: A batch of `N` random complex Stiefel matrices of size `(n, k)`.
+        x (torch.Tensor): A batch of `N` random complex Stiefel matrices of size `(N, n, k)`.
 
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
@@ -651,7 +651,7 @@ def rand_stiefel_quaternionic(N, n, k, seed=None, rand_cqe=rand_cqe_svd, qp_unif
         device (str, optional): Device to store the tensor on.
 
     Returns:
-        torch.Tensor: A batch of `N` random quaternionic Stiefel matrices of size `(2n, 2k)`.
+        x (torch.Tensor): A batch of `N` random quaternionic Stiefel matrices of size `(N, 2n, 2k)`.
 
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
@@ -714,7 +714,7 @@ def rand_gr_real(N, n, k, seed=None, rand_coe=rand_coe_qr, qp_unif_gen=qp.IIDStd
         device (str, optional): Device to store the tensor on.
 
     Returns:
-        torch.Tensor: A batch of `N` random real Grassmannian matrices of size `(n, n)`.
+        x (torch.Tensor): A batch of `N` random real Grassmannian matrices of size `(N, n, n)`.
 
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
@@ -753,7 +753,7 @@ def rand_gr_complex(N, n, k, seed=None, rand_cue=rand_cue_qr, qp_unif_gen=qp.IID
         device (str, optional): Device to store the tensor on.
 
     Returns:
-        torch.Tensor: A batch of `N` random complex Grassmannian matrices of size `(n, n)`.
+        x (torch.Tensor): A batch of `N` random complex Grassmannian matrices of size `(N, n, n)`.
 
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
@@ -800,7 +800,7 @@ def rand_gr_quaternionic(N, n, k, seed=None, rand_cqe=rand_cqe_svd, qp_unif_gen=
         device (str, optional): Device to store the tensor on.
 
     Returns:
-        torch.Tensor: A batch of `N` random quaternionic Grassmannian matrices of size `(2n, 2n)`.
+        x (torch.Tensor): A batch of `N` random quaternionic Grassmannian matrices of size `(N, 2n, 2n)`.
 
     Examples:
         >>> torch.set_default_dtype(torch.float64) 

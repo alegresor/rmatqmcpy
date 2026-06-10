@@ -10,7 +10,7 @@ def tf_coe_qr(u):
         u (torch.Tensor): Uniformly distributed samples in [0, 1] of shape `(..., n**2)`.
 
     Returns:
-        torch.Tensor: A batch of random orthogonal matrices of shape `(..., n, n)`.
+        x (torch.Tensor): A batch of random orthogonal matrices of shape `(..., n, n)`.
 
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
@@ -51,7 +51,7 @@ def tf_cue_qr(u):
         u (torch.Tensor): Uniformly distributed samples in [0, 1] of shape `(..., 2*n**2)`.
 
     Returns:
-        torch.Tensor: A batch of random unitary matrices of shape `(..., n, n)`.
+        x (torch.Tensor): A batch of random unitary matrices of shape `(..., n, n)`.
         
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
@@ -94,7 +94,7 @@ def tf_coe_eig(u):
         u (torch.Tensor): Uniformly distributed samples in [0, 1] of shape `(..., n*(n+1)//2 + 2*n)`.
 
     Returns:
-        torch.Tensor: A batch of random orthogonal matrices of shape `(..., n, n)`.
+        x (torch.Tensor): A batch of random orthogonal matrices of shape `(..., n, n)`.
         
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
@@ -145,7 +145,7 @@ def tf_cue_eig(u):
         u (torch.Tensor): Uniformly distributed samples in [0, 1] of shape `(..., n**2 + 2*n)`.
 
     Returns:
-        torch.Tensor: A batch of random unitary matrices of shape `(..., n, n)`.
+        x (torch.Tensor): A batch of random unitary matrices of shape `(..., n, n)`.
         
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
@@ -199,7 +199,7 @@ def tf_cqe_svd(u):
         u (torch.Tensor): Uniformly distributed samples in [0, 1] of shape `(..., 4*n**2)`.
 
     Returns:
-        torch.Tensor: A batch of random symplectic unitary matrices of shape `(..., 2n, 2n)`.
+        x (torch.Tensor): A batch of random symplectic unitary matrices of shape `(..., 2n, 2n)`.
         
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
