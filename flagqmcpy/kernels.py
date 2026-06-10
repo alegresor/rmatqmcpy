@@ -10,6 +10,15 @@ from .rand import (
 
 def compute_tau_int_traceXY_topow_r(lam, r):
     r""" 
+    Compute the expected value of the trace of the product of two random flag matrices raised to the power `r`.
+
+    Args:
+        lam (torch.Tensor): Eigenvalues of the flag matrices.
+        r (int): The power to which the trace is raised.
+
+    Returns:
+        torch.Tensor: A tensor of shape `(r+1,)` containing the expected values for powers `0` to `r`.
+
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
 
@@ -32,7 +41,10 @@ def compute_tau_int_traceXY_topow_r(lam, r):
         tensor([1.0000, 0.8571, 0.7388, 0.6402])
     """
     import sympy
-    from jackpy.jack import ZonalPol
+    try:
+        from jackpy.jack import ZonalPol
+    except ImportError:
+        raise ImportError("jackpy not found, try pip install jackpolynomials or pip install --ignore-requires-python jackpolynomials")
     n = lam.size(-1)
     assert lam.shape==(n,)
     device = lam.device
@@ -51,7 +63,14 @@ def compute_tau_int_traceXY_topow_r(lam, r):
 
 class KernelPolyFlag(object):
     r"""
-    Examples:
+    Polynomial kernel for flag matrices.
+
+    Args:
+        lam (torch.Tensor): Eigenvalues of the flag matrices.
+        r (int): Degree of the polynomial.
+        c (float): Constant offset.
+
+   Examples:
         >>> torch.set_default_dtype(torch.float64) 
         >>> rng = torch.Generator().manual_seed(7)
 
@@ -98,6 +117,14 @@ class KernelPolyFlag(object):
 
 class KernelMaternChordal(object):
     r"""
+    Matern chordal kernel for flag matrices.
+
+    Args:
+        lam (torch.Tensor): Eigenvalues of the flag matrices.
+        nu (float): Smoothness parameter. Must be in `[1/2, 3/2, 5/2, 7/2, 9/2, 11/2, 13/2, np.inf]`.
+        sigma2 (float, optional): Variance parameter.
+        rho (float, optional): Length-scale parameter.
+
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
 

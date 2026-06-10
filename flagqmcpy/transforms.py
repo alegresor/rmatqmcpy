@@ -4,6 +4,14 @@ import numpy as np
 
 def tf_coe_qr(u):
     r"""
+    Transform uniform samples to random orthogonal matrices (COE) using QR decomposition.
+
+    Args:
+        u (torch.Tensor): Uniformly distributed samples in [0, 1] of shape `(..., n**2)`.
+
+    Returns:
+        torch.Tensor: A batch of random orthogonal matrices of shape `(..., n, n)`.
+
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
         >>> rng = torch.Generator().manual_seed(7)
@@ -37,6 +45,14 @@ def tf_coe_qr(u):
 
 def tf_cue_qr(u):
     r"""
+    Transform uniform samples to random unitary matrices (CUE) using QR decomposition.
+
+    Args:
+        u (torch.Tensor): Uniformly distributed samples in [0, 1] of shape `(..., 2*n**2)`.
+
+    Returns:
+        torch.Tensor: A batch of random unitary matrices of shape `(..., n, n)`.
+        
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
         >>> rng = torch.Generator().manual_seed(7)
@@ -72,6 +88,14 @@ def tf_cue_qr(u):
 
 def tf_coe_eig(u):
     r"""
+    Transform uniform samples to random orthogonal matrices (COE) using eigenvalue decomposition.
+
+    Args:
+        u (torch.Tensor): Uniformly distributed samples in [0, 1] of shape `(..., n*(n+1)//2 + 2*n)`.
+
+    Returns:
+        torch.Tensor: A batch of random orthogonal matrices of shape `(..., n, n)`.
+        
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
         >>> rng = torch.Generator().manual_seed(7)
@@ -115,6 +139,14 @@ def tf_coe_eig(u):
 
 def tf_cue_eig(u):
     r"""
+    Transform uniform samples to random unitary matrices (CUE) using eigenvalue decomposition.
+
+    Args:
+        u (torch.Tensor): Uniformly distributed samples in [0, 1] of shape `(..., n**2 + 2*n)`.
+
+    Returns:
+        torch.Tensor: A batch of random unitary matrices of shape `(..., n, n)`.
+        
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
         >>> rng = torch.Generator().manual_seed(7)
@@ -161,6 +193,14 @@ def tf_cue_eig(u):
 
 def tf_cqe_svd(u):
     r"""
+    Transform uniform samples to random symplectic unitary matrices (CQE) using SVD.
+
+    Args:
+        u (torch.Tensor): Uniformly distributed samples in [0, 1] of shape `(..., 4*n**2)`.
+
+    Returns:
+        torch.Tensor: A batch of random symplectic unitary matrices of shape `(..., 2n, 2n)`.
+        
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
         >>> rng = torch.Generator().manual_seed(7)
