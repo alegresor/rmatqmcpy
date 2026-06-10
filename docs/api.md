@@ -2,12 +2,12 @@
 
 ## Kernels
 
-::: flagqmcpy.rand
+::: rmatqmcpy.rand
 
 ## Random matrices
 
-::: flagqmcpy.kernels
+::: rmatqmcpy.kernels
 
 ## Low level transforms 
 
-::: flagqmcpy.transforms
+::: rmatqmcpy.transforms

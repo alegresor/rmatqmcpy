@@ -13,7 +13,7 @@ Repository = "https://github.com/alegresor/ManifoldQMC"
 Issues = "https://github.com/alegresor/ManifoldQMC/issues"
 
 [project]
-name = "flagqmcpy"
+name = "rmatqmcpy"
 description = "Algorithms, Gradients, and Subplot Utils for `torch` and `matplotlib`"
 authors = [
     {name="Aleksei G. Sorokin", email="agsorokin3@gmail.com"},
@@ -49,4 +49,4 @@ dev = [
 
 [tool.pdm.version]
 source = "file"
-path = "flagqmcpy/__init__.py"
+path = "rmatqmcpy/__init__.py"
