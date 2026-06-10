@@ -1,4 +1,4 @@
-site_name: "agsutil"
+site_name: "RMatQMCPy"
 nav:
   - Home: index.md
   - Package Reference: api.md
@@ -32,7 +32,7 @@ plugins:
       default_handler: python
       handlers:
         python:
-          paths: [agsutil]  # search packages in the src folder
+          paths: [rmatqmcpy]  # search packages in the src folder
           options:
             members_order: source
             show_root_toc_entry: false
@@ -53,13 +53,13 @@ theme:
       toggle:
         icon: material/weather-night
         name: Switch to dark mode
-      primary: deep orange
+      primary: deep purple
     # Palette toggle for dark mode
     - scheme: slate
       toggle:
         icon: material/weather-sunny
         name: Switch to light mode
-      primary: deep orange
+      primary: deep purple
   name: material
   navigation_depth: 6
   color_mode: auto
