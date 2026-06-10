@@ -1,397 +1,17 @@
-import torch 
 import agsutil
-from jackpy.jack import ZonalPol
-import sympy
+import torch 
 import numpy as np
 import qmcpy as qp
 
-def compute_tau_int_traceXY_topow_r(lam, r):
-    r""" 
-    Examples:
-        >>> torch.set_default_dtype(torch.float64) 
+from .transforms import (
+  tf_coe_qr,
+  tf_coe_eig,
+  tf_cue_qr,
+  tf_cue_eig,
+  tf_cqe_svd,
+)
 
-        >>> lam = torch.arange(1,4,dtype=float)
-        >>> lam = lam/torch.linalg.norm(lam)
-        >>> tau = compute_tau_int_traceXY_topow_r(lam,2)
-        >>> tau 
-        tensor([1.0000, 0.8571, 0.7388])
-
-        >>> N = lam.size(-1) 
-        >>> T1 = lam.sum()**2
-        >>> T2 = (lam**2).sum()
-        >>> tauref = torch.tensor([1,T1/N,1/((N-1)*N*(N+2))*((N+1)*T1**2+2*N*T2**2-4*T1*T2)]) 
-        >>> tauref
-        tensor([1.0000, 0.8571, 0.7388])
-        >>> torch.allclose(tau,tauref)
-        True
-
-        >>> compute_tau_int_traceXY_topow_r(lam,3)
-        tensor([1.0000, 0.8571, 0.7388, 0.6402])
-    """
-    N = lam.size(-1)
-    assert lam.shape==(N,)
-    device = lam.device
-    tau = torch.zeros(r+1,device=device)
-    tau[0] = 1
-    lamlist = lam.cpu().tolist()
-    onesN = [1.]*N
-    for t in range(1,r+1):
-        for m in agsutil.enumerate_partitions(t):
-            if len(m)>N: continue
-            mpart = sympy.combinatorics.partitions.IntegerPartition(m)
-            zp = ZonalPol(N,mpart)
-            exprtm = (zp(*lamlist)**2)/zp(*onesN)
-            tau[t] += float(exprtm)
-    return tau
-
-class KernelPolyFlag(object):
-    r"""
-    Examples:
-        >>> torch.set_default_dtype(torch.float64) 
-        >>> rng = torch.Generator().manual_seed(7)
-
-        >>> r = 3
-        >>> c = 0
-        >>> lam = torch.arange(1,8,dtype=float)
-        >>> lam = lam/torch.linalg.norm(lam)
-        >>> kernel = KernelPolyFlag(lam,r,c)
-        >>> kernel.tau 
-        tensor([1.0000, 0.8000, 0.6415, 0.5156])
-        >>> kernel.double_integral
-        tensor(0.5156)
-        >>> N = lam.size(-1)
-        >>> qx = tf_coe_qr(torch.rand((2**3,N**2),generator=rng))
-        >>> x = torch.einsum("...ij,...j,...kj->...ik",qx,lam,qx)
-        >>> qy = tf_coe_qr(torch.rand((2**18,N**2),generator=rng))
-        >>> y = torch.einsum("...ij,...j,...kj->...ik",qy,lam,qy)
-        >>> x.shape
-        torch.Size([8, 7, 7])
-        >>> y.shape
-        torch.Size([262144, 7, 7])
-        >>> kvals = kernel(x[:,None,:,:],y[None,:,:,:])
-        >>> kvals.shape
-        torch.Size([8, 262144])
-        >>> kmeans = kvals.mean(-1)
-        >>> kmeans.shape
-        torch.Size([8])
-        >>> kmeans
-        tensor([1.0005, 1.0000, 1.0005, 1.0001, 0.9998, 1.0002, 1.0003, 1.0002])
-        >>> kmeans.mean()-1
-        tensor(0.0002)
-    """
-    def __init__(self, lam, r, c):
-        self.lam = lam 
-        self.r = r
-        self.c = c
-        self.tau = compute_tau_int_traceXY_topow_r(self.lam,self.r)
-        jvec = torch.arange(self.r+1,device=self.lam.device)
-        rt = jvec[-1]
-        self.double_integral = (agsutil.comb(rt,jvec)*self.c**(rt-jvec)*self.tau).sum()
-    def __call__(self, x, y):
-        v = (self.c+(x*y).sum((-2,-1)))**self.r/self.double_integral 
-        return v
-
-class KernelMaternChordal(object):
-    r"""
-    Examples:
-        >>> torch.set_default_dtype(torch.float64) 
-
-        >>> lam = torch.arange(1,8,dtype=float)
-        >>> lam = lam/torch.linalg.norm(lam)
-        >>> kernel = KernelMaternChordal(lam,nu=1/2)
-
-        >>> x = rand_flag_real(3,lam,seed=7)
-        >>> x.shape 
-        torch.Size([3, 7, 7])
-        >>> k = kernel(x[:,None,:,:],x[None,:,:,:])
-        >>> k.shape 
-        torch.Size([3, 3])
-        >>> k
-        tensor([[1.0000, 0.5458, 0.5388],
-                [0.5458, 1.0000, 0.5787],
-                [0.5388, 0.5787, 1.0000]])
-        >>> for nu in [1/2,3/2,5/2,7/2,9/2,11/2,13/2,np.inf]:
-        ...     kernel = KernelMaternChordal(lam,nu=1/2)
-        ...     k = kernel(x[:,None,:,:],x[None,:,:,:])
-        ...     assert k.shape==(3,3)
-        ...     assert not k.isnan().any()
-        ...     assert k.isfinite().all()
-        
-        >>> x = rand_flag_complex(3,lam,seed=7)
-        >>> x.shape 
-        torch.Size([3, 7, 7])
-        >>> k = kernel(x[:,None,:,:],x[None,:,:,:])
-        >>> k.shape 
-        torch.Size([3, 3])
-        >>> k
-        tensor([[1.0000, 0.5225, 0.5189],
-                [0.5225, 1.0000, 0.5716],
-                [0.5189, 0.5716, 1.0000]])
-        >>> for nu in [1/2,3/2,5/2,7/2,9/2,11/2,13/2,np.inf]:
-        ...     kernel = KernelMaternChordal(lam,nu=1/2)
-        ...     k = kernel(x[:,None,:,:],x[None,:,:,:])
-        ...     assert k.shape==(3,3)
-        ...     assert not k.isnan().any()
-        ...     assert k.isfinite().all()
-    """
-    SUPPORTED_NU = [1/2,3/2,5/2,7/2,9/2,11/2,13/2,np.inf]
-    def __init__(self, lam, nu, sigma2=1, rho=1):
-        self.lam = lam 
-        self.nu = nu
-        self.sigma2 = sigma2 
-        self.rho = rho 
-        self.tr_lam2 = (self.lam**2).sum()
-        assert self.nu in self.SUPPORTED_NU, "nu should be in %s"%str(self.SUPPORTED_NU)
-        if self.nu==1/2: 
-            self.c = torch.tensor([1],dtype=self.lam.real.dtype,device=self.lam.device)
-            self.nu_str = r"$\nu = 1/2$"
-        elif self.nu==3/2:
-            self.c = torch.tensor([1,np.sqrt(3)],dtype=self.lam.real.dtype,device=self.lam.device)
-            self.nu_str = r"$\nu = 3/2$"
-        elif self.nu==5/2:
-            self.c = torch.tensor([1,np.sqrt(5),5/3],dtype=self.lam.real.dtype,device=self.lam.device)
-            self.nu_str = r"$\nu = 5/2$"
-        elif self.nu==7/2:
-            self.c = torch.tensor([1,np.sqrt(7),14/5,7*np.sqrt(7)/15],dtype=self.lam.real.dtype,device=self.lam.device)
-            self.nu_str = r"$\nu = 7/2$"
-        elif self.nu==9/2:
-            self.c = torch.tensor([1,3,27/7,18/7,27/35],dtype=self.lam.real.dtype,device=self.lam.device)
-            self.nu_str = r"$\nu = 9/2$"
-        elif self.nu==11/2:
-            self.c = torch.tensor([1,np.sqrt(11),44/9,11*np.sqrt(11)/9,121/63,121*np.sqrt(11)/945],dtype=self.lam.real.dtype,device=self.lam.device)
-            self.nu_str = r"$\nu = 11/2$"
-        elif self.nu==13/2:
-            self.c = torch.tensor([1,np.sqrt(13),65/11,52*np.sqrt(13)/33,338/99,169*np.sqrt(13)/495,2197/10395],dtype=self.lam.real.dtype,device=self.lam.device)
-            self.nu_str = r"$\nu = 13/2$"
-        elif self.nu==np.inf:
-            self.nu_str = r"$\nu = \infty$"
-    def chordal_dist(self, x, y):
-        return torch.linalg.norm(x-y,dim=(-2,-1)).real
-    def __call__(self, x, y):
-        r = self.chordal_dist(x,y) 
-        rscaled = r/self.rho
-        if self.nu==np.inf:
-            k = torch.exp(-(rscaled)**2/2)
-        else:
-            exp_term = torch.exp(-np.sqrt(2*self.nu)*rscaled) 
-            poly_term = (self.c*rscaled[...,None]**torch.arange(len(self.c),dtype=self.lam.real.dtype)).sum(-1)
-            k = exp_term*poly_term
-        return self.sigma2*k
-
-def tf_coe_qr(u):
-    r"""
-    Examples:
-        >>> torch.set_default_dtype(torch.float64) 
-        >>> rng = torch.Generator().manual_seed(7)
-
-        >>> lam = torch.arange(1,4,dtype=float)
-        >>> lam = lam/torch.linalg.norm(lam)
-        >>> N = lam.size(-1)
-        >>> q = tf_coe_qr(torch.rand((2,N**2),generator=rng))
-        >>> q.shape
-        torch.Size([2, 3, 3])
-        >>> q
-        tensor([[[-0.6554,  0.0144,  0.7552],
-                 [ 0.4522,  0.8083,  0.3771],
-                 [-0.6049,  0.5886, -0.5363]],
-        <BLANKLINE>
-                [[ 0.4473, -0.3480, -0.8239],
-                 [-0.6125, -0.7904,  0.0013],
-                 [ 0.6517, -0.5041,  0.5667]]])
-    """ 
-    N = int(np.round(np.sqrt(u.size(-1))))
-    assert u.size(-1)==(N**2)
-    assert (0<=u).all()
-    assert (u<=1).all()
-    u = u.reshape((*u.shape[:-1],N,N))
-    v = agsutil.icdf_std_normal(u)
-    q,r = torch.linalg.qr(v)
-    d = torch.diagonal(r,dim1=-2,dim2=-1).sign()
-    q = q*d[...,None,:]
-    # assert torch.allclose(torch.einsum("...ij,...jk->...ik",q,r*d[...,:,None]),v)
-    return q
-
-def tf_cue_qr(u):
-    r"""
-    Examples:
-        >>> torch.set_default_dtype(torch.float64) 
-        >>> rng = torch.Generator().manual_seed(7)
-
-        >>> lam = torch.arange(1,4,dtype=float)
-        >>> lam = lam/torch.linalg.norm(lam)
-        >>> N = lam.size(-1)
-        >>> q = tf_cue_qr(torch.rand((2,2*N**2),generator=rng))
-        >>> q.shape
-        torch.Size([2, 3, 3])
-        >>> q
-        tensor([[[-0.2586-0.2661j,  0.8447-0.1177j,  0.3613+0.0667j],
-                 [-0.2387+0.0676j,  0.2890+0.2913j, -0.5804-0.6582j],
-                 [-0.4265-0.7867j, -0.2891-0.1438j, -0.2795+0.1297j]],
-        <BLANKLINE>
-                [[-0.3620+0.7348j,  0.3715+0.0140j,  0.3549-0.2545j],
-                 [ 0.3698+0.1818j,  0.4820+0.5669j, -0.1691+0.4979j],
-                 [ 0.0229-0.3983j,  0.3680+0.4155j, -0.0743-0.7261j]]])
-    """ 
-    N = int(np.round(np.sqrt(u.size(-1)/2)))
-    assert u.size(-1)==(2*N**2)
-    assert (0<=u).all()
-    assert (u<=1).all()
-    u = u.reshape((*u.shape[:-1],N,N,2))
-    v = agsutil.icdf_std_normal(u)
-    v_complex = torch.complex(v[...,0],v[...,1])
-    q,r = torch.linalg.qr(v_complex)
-    d = torch.diagonal(r,dim1=-2,dim2=-1)
-    ph = d/torch.abs(d)
-    q = q*ph[...,None,:]
-    # assert torch.allclose(torch.einsum("...ij,...jk->...ik",q,r*ph[..., :, None].conj()),v_complex)
-    return q
-
-def tf_coe_eig(u):
-    r"""
-    Examples:
-        >>> torch.set_default_dtype(torch.float64) 
-        >>> rng = torch.Generator().manual_seed(7)
-
-        >>> lam = torch.arange(1,4,dtype=float)
-        >>> lam = lam/torch.linalg.norm(lam)
-        >>> N = lam.size(-1)
-        >>> q = tf_coe_eig(torch.rand((2,N*(N+1)//2+2*N),generator=rng))
-        >>> q.shape
-        torch.Size([2, 3, 3])
-        >>> q
-        tensor([[[-0.4010,  0.2775, -0.8731],
-                 [-0.3006, -0.9401, -0.1607],
-                 [-0.8654,  0.1980,  0.4604]],
-        <BLANKLINE>
-                [[-0.6765,  0.5182, -0.5232],
-                 [ 0.1492,  0.7922,  0.5917],
-                 [ 0.7211,  0.3223, -0.6133]]])
-        >>> torch.allclose(torch.einsum("...ij,...kj->...ik",q,q),torch.eye(N))
-        True
-    """
-    N = int(np.round((-5+np.sqrt(25+8*u.size(-1)))/2))
-    assert u.size(-1)==(N*(N+1)//2+2*N)
-    assert (0<=u).all()
-    assert (u<=1).all()
-    num_tril = N*(N-1)//2
-    alpha = agsutil.icdf_std_normal(u[...,:N])
-    beta = agsutil.icdf_std_normal(u[...,N:N+num_tril])/np.sqrt(2)
-    signs = torch.where(u[...,N+num_tril:N+num_tril+N]>1/2,1.,-1.).to(u.device)
-    perms = u[...,N+num_tril+N:].argsort(-1)
-    il0,il1 = torch.tril_indices(N,N,offset=-1,device=u.device)
-    v = torch.eye(N,device=u.device)*alpha[...,None]
-    v[...,il0,il1] = beta
-    v += v.tril(-1).transpose(dim0=-2,dim1=-1)
-    # assert torch.allclose(v[...,torch.arange(N,device=u.device),torch.arange(N,device=u.device)],alpha)
-    gamma,q = torch.linalg.eigh(v)
-    q = q*signs[...,None,:]
-    # assert torch.allclose(torch.einsum("...ij,...j,...kj->...ik",q,gamma,q),v)
-    q = torch.gather(q,dim=-1,index=perms[...,None,:].expand_as(q))
-    return q
-
-def tf_cue_eig(u):
-    r"""
-    Examples:
-        >>> torch.set_default_dtype(torch.float64) 
-        >>> rng = torch.Generator().manual_seed(7)
-
-        >>> lam = torch.arange(1,4,dtype=float)
-        >>> lam = lam/torch.linalg.norm(lam)
-        >>> N = lam.size(-1)
-        >>> q = tf_cue_eig(torch.rand((2,N**2+2*N),generator=rng))
-        >>> q.shape
-        torch.Size([2, 3, 3])
-        >>> q
-        tensor([[[ 0.4933+0.2062j, -0.3761-0.1423j,  0.0437-0.7420j],
-                 [-0.1455-0.7220j, -0.3441+0.1009j,  0.5631-0.1091j],
-                 [-0.3802+0.1649j, -0.7717-0.3380j, -0.2524+0.2341j]],
-        <BLANKLINE>
-                [[-0.0814-0.6795j, -0.2821+0.2191j, -0.6032+0.2004j],
-                 [ 0.0860+0.4265j, -0.3979+0.7882j, -0.0729-0.1606j],
-                 [-0.1979+0.5507j,  0.1467-0.2669j, -0.7512+0.0238j]]])
-        >>> torch.allclose(torch.einsum("...ij,...kj->...ik",q,q.conj()),torch.eye(N,dtype=q.dtype))
-        True
-    """
-    N = int(np.round((-1+np.sqrt(1+u.size(-1)))))
-    assert u.size(-1)==(N**2+2*N)
-    assert (0<=u).all()
-    assert (u<=1).all()
-    num_tril = N*(N-1)//2
-    alpha = agsutil.icdf_std_normal(u[...,:N])
-    beta = torch.complex(
-        agsutil.icdf_std_normal(u[...,N:N+num_tril])/np.sqrt(2),
-        agsutil.icdf_std_normal(u[...,N+num_tril:N+2*num_tril])/np.sqrt(2))
-    theta = 2*np.pi*u[...,N+2*num_tril:N+2*num_tril+N]
-    perms = u[...,N+2*num_tril+N:].argsort(-1)
-    il0,il1 = torch.tril_indices(N,N,offset=-1,device=u.device)
-    v = torch.eye(N,device=u.device,dtype=beta.dtype)*alpha[...,None].to(beta.dtype)
-    v[...,il0,il1] = beta
-    v += v.tril(-1).conj().transpose(dim0=-2,dim1=-1)
-    # assert torch.allclose(v[...,torch.arange(N,device=u.device),torch.arange(N,device=u.device)],alpha.to(v.dtype))
-    gamma,q = torch.linalg.eigh(v)
-    phases = torch.complex(torch.cos(theta),torch.sin(theta))
-    q = q*phases[...,None,:]
-    # assert torch.allclose(torch.einsum("...ij,...j,...kj->...ik",q,gamma,q.conj()),v)
-    q = torch.gather(q,dim=-1,index=perms[...,None,:].expand_as(q))
-    return q
-
-def tf_cqe_svd(u):
-    r"""
-    Examples:
-        >>> torch.set_default_dtype(torch.float64) 
-        >>> rng = torch.Generator().manual_seed(7)
-
-        >>> lam = torch.arange(1,4,dtype=float)
-        >>> lam = lam/torch.linalg.norm(lam)
-        >>> N = lam.size(-1)
-        >>> q = tf_cqe_svd(torch.rand((2,4*N**2),generator=rng))
-        >>> q.shape
-        torch.Size([2, 6, 6])
-        >>> q
-        tensor([[[-0.3855-0.0066j,  0.2846+0.1340j,  0.0531+0.4453j, -0.0713-0.0289j,
-                  -0.0862-0.1470j, -0.5170-0.4990j],
-                 [-0.2564-0.3464j, -0.4935+0.2373j,  0.3129-0.0210j, -0.1699+0.2938j,
-                  -0.3639+0.4087j, -0.0355-0.0141j],
-                 [ 0.4523+0.2013j, -0.3856+0.2435j,  0.2998+0.1332j,  0.5145+0.1862j,
-                   0.0854-0.2397j, -0.1482-0.2306j],
-                 [ 0.0713-0.0289j,  0.0862-0.1470j,  0.5170-0.4990j, -0.3855+0.0066j,
-                   0.2846-0.1340j,  0.0531-0.4453j],
-                 [ 0.1699+0.2938j,  0.3639+0.4087j,  0.0355-0.0141j, -0.2564+0.3464j,
-                  -0.4935-0.2373j,  0.3129+0.0210j],
-                 [-0.5145+0.1862j, -0.0854-0.2397j,  0.1482-0.2306j,  0.4523-0.2013j,
-                  -0.3856-0.2435j,  0.2998-0.1332j]],
-        <BLANKLINE>
-                [[-0.4396-0.3859j, -0.1858+0.4638j, -0.1706-0.4717j,  0.1578-0.1175j,
-                  -0.1740+0.0735j,  0.2780-0.0707j],
-                 [ 0.0092+0.2218j, -0.1126+0.4596j,  0.3860+0.1825j, -0.4997-0.0507j,
-                   0.0025+0.3514j,  0.2753+0.3050j],
-                 [ 0.3743+0.2976j,  0.2388+0.3247j,  0.0849-0.3571j,  0.2850-0.0874j,
-                  -0.4425+0.0953j, -0.3876+0.1736j],
-                 [-0.1578-0.1175j,  0.1740+0.0735j, -0.2780-0.0707j, -0.4396+0.3859j,
-                  -0.1858-0.4638j, -0.1706+0.4717j],
-                 [ 0.4997-0.0507j, -0.0025+0.3514j, -0.2753+0.3050j,  0.0092-0.2218j,
-                  -0.1126-0.4596j,  0.3860-0.1825j],
-                 [-0.2850-0.0874j,  0.4425+0.0953j,  0.3876+0.1736j,  0.3743-0.2976j,
-                   0.2388-0.3247j,  0.0849+0.3571j]]])
-        >>> torch.allclose(torch.einsum("...ij,...kj->...ik",q,torch.conj(q)),torch.eye(2*N,dtype=q.dtype).expand_as(q))
-        True
-    """ 
-    N = int(np.round(np.sqrt(u.size(-1)/4)))
-    assert u.size(-1)==(4*N**2)
-    assert (0<=u).all()
-    assert (u<=1).all()
-    u = u.reshape((*u.shape[:-1],N,N,4))
-    v = agsutil.icdf_std_normal(u)
-    B = torch.complex(v[..., 0],v[..., 1])
-    C = torch.complex(v[..., 2],v[..., 3])
-    v_symplectic = torch.cat([
-        torch.cat([B,              C            ], dim=-1),
-        torch.cat([-torch.conj(C), torch.conj(B)], dim=-1)], dim=-2)
-    U,_,Vh = torch.linalg.svd(v_symplectic)
-    q = torch.einsum("...ij,...jk->...ik",U,Vh)
-    return q
-
-def rand_coe_qr(n, N, seed=None, device="cpu", qp_unif_gen=qp.IIDStdUniform):
+def rand_coe_qr(N, n, seed=None, device="cpu", qp_unif_gen=qp.IIDStdUniform):
     r"""
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
@@ -422,11 +42,11 @@ def rand_coe_qr(n, N, seed=None, device="cpu", qp_unif_gen=qp.IIDStdUniform):
                  [ 0.2215, -0.1162,  0.9682]]])
     """
     rng = agsutil.get_torch_rng(seed,device=device)
-    u = torch.from_numpy(qp_unif_gen(dimension=N**2,seed=seed)(n)).to(device)
+    u = torch.from_numpy(qp_unif_gen(dimension=n**2,seed=seed)(N)).to(device)
     q = tf_coe_qr(u)
     return q
 
-def rand_cue_qr(n, N, seed=None, device="cpu", qp_unif_gen=qp.IIDStdUniform):
+def rand_cue_qr(N, n, seed=None, device="cpu", qp_unif_gen=qp.IIDStdUniform):
     r"""
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
@@ -456,11 +76,11 @@ def rand_cue_qr(n, N, seed=None, device="cpu", qp_unif_gen=qp.IIDStdUniform):
                  [ 0.1663+0.4774j, -0.7245-0.2670j, -0.0730-0.3782j]]])
     """
     rng = agsutil.get_torch_rng(seed,device=device)
-    u = torch.from_numpy(qp_unif_gen(dimension=2*N**2,seed=seed)(n)).to(device)
+    u = torch.from_numpy(qp_unif_gen(dimension=2*n**2,seed=seed)(N)).to(device)
     q = tf_cue_qr(u)
     return q
 
-def rand_coe_eig(n, N, seed=None, device="cpu", qp_unif_gen=qp.IIDStdUniform):
+def rand_coe_eig(N, n, seed=None, device="cpu", qp_unif_gen=qp.IIDStdUniform):
     r"""
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
@@ -489,11 +109,11 @@ def rand_coe_eig(n, N, seed=None, device="cpu", qp_unif_gen=qp.IIDStdUniform):
                  [ 0.2656,  0.8102, -0.5226],
                  [ 0.3134, -0.5851, -0.7479]]])
     """
-    u = torch.from_numpy(qp_unif_gen(dimension=N*(N+1)//2+2*N,seed=seed)(n)).to(device)
+    u = torch.from_numpy(qp_unif_gen(dimension=n*(n+1)//2+2*n,seed=seed)(N)).to(device)
     q = tf_coe_eig(u)
     return q
 
-def rand_cue_eig(n, N, seed=None, device="cpu", qp_unif_gen=qp.IIDStdUniform):
+def rand_cue_eig(N, n, seed=None, device="cpu", qp_unif_gen=qp.IIDStdUniform):
     r"""
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
@@ -522,11 +142,11 @@ def rand_cue_eig(n, N, seed=None, device="cpu", qp_unif_gen=qp.IIDStdUniform):
                  [ 0.4655+0.4044j,  0.6083+0.2491j, -0.3016+0.3109j],
                  [-0.0103+0.3949j, -0.3730-0.6191j, -0.5221+0.2211j]]])
     """
-    u = torch.from_numpy(qp_unif_gen(dimension=N**2+2*N,seed=seed)(n)).to(device)
+    u = torch.from_numpy(qp_unif_gen(dimension=n**2+2*n,seed=seed)(N)).to(device)
     q = tf_cue_eig(u)
     return q
 
-def rand_cqe_svd(n, N, seed=None, device="cpu", qp_unif_gen=qp.IIDStdUniform):
+def rand_cqe_svd(N, n, seed=None, device="cpu", qp_unif_gen=qp.IIDStdUniform):
     r"""
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
@@ -591,11 +211,11 @@ def rand_cqe_svd(n, N, seed=None, device="cpu", qp_unif_gen=qp.IIDStdUniform):
                  [ 0.0528+0.3026j, -0.2235-0.4632j,  0.1256+0.0951j,  0.4454+0.0571j,
                   -0.0687-0.2563j, -0.5844-0.0523j]]])
     """
-    u = torch.from_numpy(qp_unif_gen(dimension=4*N**2,seed=seed)(n)).to(device)
+    u = torch.from_numpy(qp_unif_gen(dimension=4*n**2,seed=seed)(N)).to(device)
     q = tf_cqe_svd(u)
     return q
 
-def rand_flag_real(n, lam, seed=None, rand_coe=rand_coe_qr, qp_unif_gen=qp.IIDStdUniform):
+def rand_flag_real(N, lam, seed=None, rand_coe=rand_coe_qr, qp_unif_gen=qp.IIDStdUniform):
     r"""
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
@@ -616,11 +236,11 @@ def rand_flag_real(n, lam, seed=None, rand_coe=rand_coe_qr, qp_unif_gen=qp.IIDSt
     """
     assert rand_coe in [rand_coe_qr,rand_coe_eig]
     assert not torch.is_complex(lam)
-    q = rand_coe(n=n,N=lam.size(-1),seed=seed,device=lam.device,qp_unif_gen=qp_unif_gen)
+    q = rand_coe(N=N,n=lam.size(-1),seed=seed,device=lam.device,qp_unif_gen=qp_unif_gen)
     x = torch.einsum("...ij,...j,...kj->...ik",q,lam.to(q.dtype),q)
     return x
 
-def rand_flag_complex(n, lam, seed=None, rand_cue=rand_cue_qr, qp_unif_gen=qp.IIDStdUniform):
+def rand_flag_complex(N, lam, seed=None, rand_cue=rand_cue_qr, qp_unif_gen=qp.IIDStdUniform):
     r"""
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
@@ -641,11 +261,11 @@ def rand_flag_complex(n, lam, seed=None, rand_cue=rand_cue_qr, qp_unif_gen=qp.II
     """
     assert rand_cue in [rand_cue_qr,rand_cue_eig]
     assert not torch.is_complex(lam)
-    q = rand_cue(n=n,N=lam.size(-1),seed=seed,device=lam.device,qp_unif_gen=qp_unif_gen)
+    q = rand_cue(N=N,n=lam.size(-1),seed=seed,device=lam.device,qp_unif_gen=qp_unif_gen)
     x = torch.einsum("...ij,...j,...kj->...ik",q,lam.to(q.dtype),q.conj())
     return x
 
-def rand_flag_quaternionic(n, lam, seed=None, rand_cqe=rand_cqe_svd, qp_unif_gen=qp.IIDStdUniform):
+def rand_flag_quaternionic(N, lam, seed=None, rand_cqe=rand_cqe_svd, qp_unif_gen=qp.IIDStdUniform):
     r"""
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
@@ -684,16 +304,16 @@ def rand_flag_quaternionic(n, lam, seed=None, rand_cqe=rand_cqe_svd, qp_unif_gen
     """
     assert rand_cqe in [rand_cqe_svd]
     assert not torch.is_complex(lam)
-    N = lam.size(-1)
-    q = rand_cqe(n=n,N=N,seed=seed,device=lam.device,qp_unif_gen=qp_unif_gen)
-    I_nn = torch.diag(torch.cat([torch.ones(N,device=lam.device),-torch.ones(N,device=lam.device)])).to(q.dtype)
+    n = lam.size(-1)
+    q = rand_cqe(N=N,n=n,seed=seed,device=lam.device,qp_unif_gen=qp_unif_gen)
+    I_nn = torch.diag(torch.cat([torch.ones(n,device=lam.device),-torch.ones(n,device=lam.device)])).to(q.dtype)
     q_H = q.conj().transpose(-2,-1)
     q_left_corner = torch.einsum("ij,...jk,kl->...il",I_nn,q_H,I_nn)
     lam_paired = torch.cat([lam,lam],dim=-1)
     x = torch.einsum("...ij,...j,...jk->...ik",q,lam_paired.to(q.dtype),q_left_corner)
     return x
 
-def rand_lgr_real(n, N, seed=None, rand_cue=rand_cue_qr, qp_unif_gen=qp.IIDStdUniform, device="cpu"):
+def rand_lgr_real(N, n, seed=None, rand_cue=rand_cue_qr, qp_unif_gen=qp.IIDStdUniform, device="cpu"):
     r"""
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
@@ -711,11 +331,11 @@ def rand_lgr_real(n, N, seed=None, rand_cue=rand_cue_qr, qp_unif_gen=qp.IIDStdUn
                  [ 0.3417+0.2311j, -0.0134+0.0125j, -0.8817+0.2282j]]])
     """
     assert rand_cue in [rand_cue_qr,rand_cue_eig]
-    q = rand_cue(n=n,N=N,seed=seed,device=device,qp_unif_gen=qp_unif_gen)
+    q = rand_cue(N=N,n=n,seed=seed,device=device,qp_unif_gen=qp_unif_gen)
     x = torch.einsum("...ij,...kj->...ik",q,q)
     return x
 
-def rand_lgr_complex(n, N, seed=None, rand_cqe=rand_cqe_svd, qp_unif_gen=qp.IIDStdUniform, device="cpu"):
+def rand_lgr_complex(N, n, seed=None, rand_cqe=rand_cqe_svd, qp_unif_gen=qp.IIDStdUniform, device="cpu"):
     r"""
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
@@ -751,16 +371,16 @@ def rand_lgr_complex(n, N, seed=None, rand_cqe=rand_cqe_svd, qp_unif_gen=qp.IIDS
                   -0.3202+5.2632e-02j,  0.0949-2.1709e-01j,  0.0069+7.0304e-18j]]])
     """
     assert rand_cqe in [rand_cqe_svd]
-    q = rand_cqe(n=n,N=N,seed=seed,device=device,qp_unif_gen=qp_unif_gen)
+    q = rand_cqe(N=N,n=n,seed=seed,device=device,qp_unif_gen=qp_unif_gen)
     I_nn = torch.diag(torch.cat([
-        torch.ones(N, device=device), 
-        -torch.ones(N, device=device)
+        torch.ones(n, device=device), 
+        -torch.ones(n, device=device)
     ])).to(q.dtype)
     q_left_corner = torch.einsum("ij,...kj,kl->...il",I_nn,q.conj(),I_nn)
     x = torch.einsum("...ij,...jk->...ik",q,q_left_corner)
     return x
 
-def rand_lgr_quaternionic(n, N, seed=None, rand_cue=rand_cue_qr, qp_unif_gen=qp.IIDStdUniform, device="cpu"):
+def rand_lgr_quaternionic(N, n, seed=None, rand_cue=rand_cue_qr, qp_unif_gen=qp.IIDStdUniform, device="cpu"):
     r"""
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
@@ -808,12 +428,216 @@ def rand_lgr_quaternionic(n, N, seed=None, rand_cue=rand_cue_qr, qp_unif_gen=qp.
                   -6.4712e-01+8.0420e-02j, -3.0627e-01-3.2671e-02j]]])
     """
     assert rand_cue in [rand_cue_qr,rand_cue_eig]
-    q = rand_cue(n=n,N=2*N,seed=seed,device=device,qp_unif_gen=qp_unif_gen)
-    I_N = torch.eye(N,device=device,dtype=q.dtype)
-    O_N = torch.zeros(N,N,device=device,dtype=q.dtype)
+    q = rand_cue(N=N,n=2*n,seed=seed,device=device,qp_unif_gen=qp_unif_gen)
+    I_N = torch.eye(n,device=device,dtype=q.dtype)
+    O_N = torch.zeros(n,n,device=device,dtype=q.dtype)
     J = torch.cat([
         torch.cat([ O_N,I_N],dim=-1),
         torch.cat([-I_N,O_N],dim=-1)],dim=-2)
     q_S = -torch.einsum("ij,...kj,kl->...il",J,q,J)
     x = torch.einsum("...ij,...jk->...ik",q,q_S)
+    return x
+
+def rand_stiefel_real(N, n, k, seed=None, rand_coe=rand_coe_qr, qp_unif_gen=qp.IIDStdUniform, device="cpu"):
+    r"""
+    Examples:
+        >>> torch.set_default_dtype(torch.float64) 
+
+        >>> x = rand_stiefel_real(2,4,3,seed=7)
+        >>> x.shape 
+        torch.Size([2, 4, 3])
+        >>> x
+        tensor([[[-0.8103, -0.3240, -0.2849],
+                 [ 0.2444, -0.5330,  0.6263],
+                 [ 0.1163, -0.7775, -0.2398],
+                 [-0.5198,  0.0805,  0.6849]],
+        <BLANKLINE>
+                [[-0.6600,  0.6605,  0.3158],
+                 [ 0.3410,  0.5402, -0.6430],
+                 [ 0.0840,  0.4057, -0.1982],
+                 [ 0.6642,  0.3277,  0.6690]]])
+    """
+    assert rand_coe in [rand_coe_qr,rand_coe_eig]
+    assert 1<=k<=n
+    x = rand_coe(N=N,n=n,seed=seed,device=device,qp_unif_gen=qp_unif_gen)[...,:k]
+    return x
+
+def rand_stiefel_complex(N, n, k, seed=None, rand_cue=rand_cue_qr, qp_unif_gen=qp.IIDStdUniform, device="cpu"):
+    r"""
+    Examples:
+        >>> torch.set_default_dtype(torch.float64) 
+
+        >>> x = rand_stiefel_complex(2,4,3,seed=7)
+        >>> x.shape 
+        torch.Size([2, 4, 3])
+        >>> x
+        tensor([[[-0.5791+0.0748j, -0.2694-0.3827j, -0.1688-0.5285j],
+                 [ 0.0832-0.5342j, -0.0508-0.4185j, -0.4533+0.0390j],
+                 [-0.5636+0.1908j,  0.5696+0.1528j,  0.1186+0.0222j],
+                 [ 0.0717+0.0866j, -0.4132-0.2909j,  0.6626+0.1775j]],
+        <BLANKLINE>
+                [[-0.1572-0.5114j, -0.0644-0.0293j,  0.0032+0.0135j],
+                 [-0.2608+0.2782j,  0.3961-0.6225j,  0.3570+0.3802j],
+                 [-0.6609-0.2334j, -0.2368-0.2797j, -0.1690-0.3820j],
+                 [-0.1562-0.2296j, -0.5166+0.2225j,  0.3754+0.6422j]]])
+    """
+    assert rand_cue in [rand_cue_qr,rand_cue_eig]
+    assert 1<=k<=n
+    x = rand_cue(N=N,n=n,seed=seed,device=device,qp_unif_gen=qp_unif_gen)[..., :k]
+    return x
+
+def rand_stiefel_quaternionic(N, n, k, seed=None, rand_cqe=rand_cqe_svd, qp_unif_gen=qp.IIDStdUniform, device="cpu"):
+    r"""
+    Examples:
+        >>> torch.set_default_dtype(torch.float64) 
+
+        >>> x = rand_stiefel_quaternionic(2,4,3,seed=7)
+        >>> x.shape 
+        torch.Size([2, 8, 6])
+        >>> x
+        tensor([[[-0.4140+0.3030j,  0.0601+0.0313j,  0.2725-0.3912j,  0.0845+0.0474j,
+                   0.0467-0.2241j, -0.2175-0.1204j],
+                 [-0.5555+0.0748j,  0.3572+0.0449j, -0.0927+0.1001j,  0.1535+0.3413j,
+                  -0.2548-0.3059j,  0.1301+0.1163j],
+                 [-0.0531-0.1221j, -0.0396-0.3151j, -0.1012+0.2916j,  0.1274-0.2141j,
+                  -0.0340-0.2394j,  0.5060-0.4238j],
+                 [-0.3121-0.2754j, -0.4287-0.3945j, -0.0973-0.0722j, -0.0424-0.1354j,
+                  -0.3801-0.1076j, -0.1164+0.3205j],
+                 [-0.0845+0.0474j, -0.0467-0.2241j,  0.2175-0.1204j, -0.4140-0.3030j,
+                   0.0601-0.0313j,  0.2725+0.3912j],
+                 [-0.1535+0.3413j,  0.2548-0.3059j, -0.1301+0.1163j, -0.5555-0.0748j,
+                   0.3572-0.0449j, -0.0927-0.1001j],
+                 [-0.1274-0.2141j,  0.0340-0.2394j, -0.5060-0.4238j, -0.0531+0.1221j,
+                  -0.0396+0.3151j, -0.1012-0.2916j],
+                 [ 0.0424-0.1354j,  0.3801-0.1076j,  0.1164+0.3205j, -0.3121+0.2754j,
+                  -0.4287+0.3945j, -0.0973+0.0722j]],
+        <BLANKLINE>
+                [[ 0.2331-0.3342j,  0.4754+0.1704j, -0.0965+0.1623j, -0.3163-0.3840j,
+                   0.2357+0.3150j, -0.2709+0.1039j],
+                 [ 0.1156-0.2160j,  0.0750-0.2084j, -0.0375+0.0934j, -0.0851-0.1242j,
+                  -0.1064-0.1801j,  0.3919+0.0141j],
+                 [ 0.3396+0.1853j,  0.3284-0.2578j, -0.0459+0.3762j,  0.2561+0.2939j,
+                  -0.3221-0.2715j, -0.3632+0.0764j],
+                 [ 0.2941-0.0642j,  0.1781+0.0226j,  0.4171+0.1087j, -0.3197-0.0961j,
+                  -0.2625-0.2109j,  0.1682-0.4698j],
+                 [ 0.3163-0.3840j, -0.2357+0.3150j,  0.2709+0.1039j,  0.2331+0.3342j,
+                   0.4754-0.1704j, -0.0965-0.1623j],
+                 [ 0.0851-0.1242j,  0.1064-0.1801j, -0.3919+0.0141j,  0.1156+0.2160j,
+                   0.0750+0.2084j, -0.0375-0.0934j],
+                 [-0.2561+0.2939j,  0.3221-0.2715j,  0.3632+0.0764j,  0.3396-0.1853j,
+                   0.3284+0.2578j, -0.0459-0.3762j],
+                 [ 0.3197-0.0961j,  0.2625-0.2109j, -0.1682-0.4698j,  0.2941+0.0642j,
+                   0.1781-0.0226j,  0.4171-0.1087j]]])
+    """
+    assert rand_cqe in [rand_cqe_svd]
+    assert 1<=k<=n
+    q = rand_cqe(N=N,n=n,seed=seed,device=device,qp_unif_gen=qp_unif_gen)
+    x = torch.cat([q[..., :k],q[...,n:n+k]],dim=-1)
+    return x
+
+def rand_gr_real(N, n, k, seed=None, rand_coe=rand_coe_qr, qp_unif_gen=qp.IIDStdUniform, device="cpu"):
+    r"""
+    Examples:
+        >>> torch.set_default_dtype(torch.float64) 
+
+        >>> x = rand_gr_real(2,4,3,seed=7)
+        >>> x.shape 
+        torch.Size([2, 4, 4])
+        >>> x
+        tensor([[[ 0.6854, -0.4075,  0.4519,  0.4000],
+                 [-0.4075,  0.4721,  0.5853,  0.5181],
+                 [ 0.4519,  0.5853,  0.3510, -0.5745],
+                 [ 0.4000,  0.5181, -0.5745,  0.4915]],
+        <BLANKLINE>
+                [[ 0.9430, -0.1426,  0.2999, -0.0213],
+                 [-0.1426,  0.6432,  0.7504, -0.0533],
+                 [ 0.2999,  0.7504, -0.5782,  0.1122],
+                 [-0.0213, -0.0533,  0.1122,  0.9920]]])
+    """
+    assert rand_coe in [rand_coe_qr,rand_coe_eig]
+    assert 1<=k<=n
+    lam = torch.cat([torch.ones(k,device=device),-torch.ones(n-k,device=device)])
+    x = rand_flag_real(N=N,lam=lam,seed=seed,rand_coe=rand_coe,qp_unif_gen=qp_unif_gen)
+    return x
+
+def rand_gr_complex(N, n, k, seed=None, rand_cue=rand_cue_qr, qp_unif_gen=qp.IIDStdUniform, device="cpu"):
+    r"""
+    Examples:
+        >>> torch.set_default_dtype(torch.float64) 
+
+        >>> x = rand_gr_complex(2,4,3,seed=7)
+        >>> x.shape 
+        torch.Size([2, 4, 4])
+        >>> x
+        tensor([[[ 0.7358+2.8368e-18j,  0.2834-3.0054e-01j,  0.1940-3.3491e-01j,
+                  -0.0361-3.6989e-01j],
+                 [ 0.2834+3.0054e-01j,  0.3541-5.3636e-18j, -0.5891+1.3857e-01j,
+                  -0.3821+4.3791e-01j],
+                 [ 0.1940+3.3491e-01j, -0.5891-1.3857e-01j,  0.4329+5.9115e-18j,
+                  -0.4424+3.1745e-01j],
+                 [-0.0361+3.6989e-01j, -0.3821-4.3791e-01j, -0.4424-3.1745e-01j,
+                   0.4771+1.3055e-17j]],
+        <BLANKLINE>
+                [[-0.4170-9.4448e-18j, -0.2046+2.5806e-01j,  0.4820+5.7829e-01j,
+                   0.3572+1.5258e-01j],
+                 [-0.2046-2.5806e-01j,  0.9235-4.2559e-18j, -0.0357+1.7128e-01j,
+                   0.0238+8.7094e-02j],
+                 [ 0.4820-5.7829e-01j, -0.0357-1.7128e-01j,  0.6001+9.9685e-19j,
+                  -0.1838+9.3896e-02j],
+                 [ 0.3572-1.5258e-01j,  0.0238-8.7094e-02j, -0.1838-9.3896e-02j,
+                   0.8935+8.6315e-18j]]])
+    """
+    assert rand_cue in [rand_cue_qr,rand_cue_eig]
+    assert 1<=k<=n
+    lam = torch.cat([torch.ones(k,device=device),-torch.ones(n-k,device=device)])
+    x = rand_flag_complex(N=N,lam=lam,seed=seed,rand_cue=rand_cue,qp_unif_gen=qp_unif_gen)
+    return x
+
+def rand_gr_quaternionic(N, n, k, seed=None, rand_cqe=rand_cqe_svd, qp_unif_gen=qp.IIDStdUniform, device="cpu"):
+    r"""
+    Examples:
+        >>> torch.set_default_dtype(torch.float64) 
+
+        >>> x = rand_gr_quaternionic(2,4,3,seed=7)
+        >>> x.shape 
+        torch.Size([2, 8, 8])
+        >>> x
+        tensor([[[ 0.1175+0.0000j,  0.2598-0.2068j, -0.2905-0.0135j,  0.2096-0.3365j,
+                  -0.0102+0.1331j, -0.3316-0.3418j,  0.1288-0.4876j,  0.1856+0.3176j],
+                 [ 0.2598+0.2068j,  0.1405+0.0000j,  0.0434-0.1098j, -0.2902-0.1208j,
+                  -0.3316-0.3418j, -0.2505-0.4770j, -0.3335+0.3315j, -0.1346-0.0318j],
+                 [-0.2905+0.0135j,  0.0434+0.1098j, -0.3432+0.0000j,  0.3599-0.0520j,
+                   0.1288-0.4876j, -0.3335+0.3315j, -0.1223+0.1892j, -0.2565+0.2438j],
+                 [ 0.2096+0.3365j, -0.2902+0.1208j,  0.3599+0.0520j,  0.3649+0.0000j,
+                   0.1856+0.3176j, -0.1346-0.0318j, -0.2565+0.2438j,  0.1413+0.4231j],
+                 [ 0.0102+0.1331j,  0.3316-0.3418j, -0.1288-0.4876j, -0.1856+0.3176j,
+                   0.1175+0.0000j,  0.2598+0.2068j, -0.2905+0.0135j,  0.2096+0.3365j],
+                 [ 0.3316-0.3418j,  0.2505-0.4770j,  0.3335+0.3315j,  0.1346-0.0318j,
+                   0.2598-0.2068j,  0.1405+0.0000j,  0.0434+0.1098j, -0.2902+0.1208j],
+                 [-0.1288-0.4876j,  0.3335+0.3315j,  0.1223+0.1892j,  0.2565+0.2438j,
+                  -0.2905-0.0135j,  0.0434-0.1098j, -0.3432+0.0000j,  0.3599+0.0520j],
+                 [-0.1856+0.3176j,  0.1346-0.0318j,  0.2565+0.2438j, -0.1413+0.4231j,
+                   0.2096-0.3365j, -0.2902-0.1208j,  0.3599-0.0520j,  0.3649+0.0000j]],
+        <BLANKLINE>
+                [[-0.0149+0.0000j,  0.1562-0.0075j,  0.4329+0.1111j,  0.2940+0.0937j,
+                  -0.2253+0.3376j, -0.2412+0.0593j,  0.2220-0.4920j, -0.3949-0.0822j],
+                 [ 0.1562+0.0075j,  0.2730+0.0000j,  0.1457-0.1226j, -0.1133-0.2403j,
+                  -0.2412+0.0593j, -0.7185-0.0566j, -0.2008+0.2001j,  0.3572-0.0710j],
+                 [ 0.4329-0.1111j,  0.1457+0.1226j, -0.0375+0.0000j,  0.3229+0.4110j,
+                   0.2220-0.4920j, -0.2008+0.2001j, -0.2601+0.0177j, -0.2135-0.0645j],
+                 [ 0.2940-0.0937j, -0.1133+0.2403j,  0.3229-0.4110j, -0.3198+0.0000j,
+                  -0.3949-0.0822j,  0.3572-0.0710j, -0.2135-0.0645j, -0.1073-0.3195j],
+                 [ 0.2253+0.3376j,  0.2412+0.0593j, -0.2220-0.4920j,  0.3949-0.0822j,
+                  -0.0149+0.0000j,  0.1562+0.0075j,  0.4329-0.1111j,  0.2940-0.0937j],
+                 [ 0.2412+0.0593j,  0.7185-0.0566j,  0.2008+0.2001j, -0.3572-0.0710j,
+                   0.1562-0.0075j,  0.2730+0.0000j,  0.1457+0.1226j, -0.1133+0.2403j],
+                 [-0.2220-0.4920j,  0.2008+0.2001j,  0.2601+0.0177j,  0.2135-0.0645j,
+                   0.4329+0.1111j,  0.1457-0.1226j, -0.0375+0.0000j,  0.3229-0.4110j],
+                 [ 0.3949-0.0822j, -0.3572-0.0710j,  0.2135-0.0645j,  0.1073-0.3195j,
+                   0.2940+0.0937j, -0.1133-0.2403j,  0.3229+0.4110j, -0.3198+0.0000j]]])
+    """
+    assert rand_cqe in [rand_cqe_svd]
+    assert 1<=k<=n
+    lam = torch.cat([torch.ones(k,device=device),-torch.ones(n-k,device=device)])
+    x = rand_flag_quaternionic(N=N,lam=lam,seed=seed,rand_cqe=rand_cqe,qp_unif_gen=qp_unif_gen)
     return x
