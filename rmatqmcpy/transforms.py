@@ -16,9 +16,9 @@ def tf_coe_qr(u):
         >>> torch.set_default_dtype(torch.float64) 
         >>> rng = torch.Generator().manual_seed(7)
 
-        >>> lam = torch.arange(1,4,dtype=float)
-        >>> lam = lam/torch.linalg.norm(lam)
-        >>> n = lam.size(-1)
+        >>> delta = torch.arange(1,4,dtype=float)
+        >>> delta = delta/torch.linalg.norm(delta)
+        >>> n = delta.size(-1)
         >>> q = tf_coe_qr(torch.rand((2,n**2),generator=rng))
         >>> q.shape
         torch.Size([2, 3, 3])
@@ -57,9 +57,9 @@ def tf_cue_qr(u):
         >>> torch.set_default_dtype(torch.float64) 
         >>> rng = torch.Generator().manual_seed(7)
 
-        >>> lam = torch.arange(1,4,dtype=float)
-        >>> lam = lam/torch.linalg.norm(lam)
-        >>> n = lam.size(-1)
+        >>> delta = torch.arange(1,4,dtype=float)
+        >>> delta = delta/torch.linalg.norm(delta)
+        >>> n = delta.size(-1)
         >>> q = tf_cue_qr(torch.rand((2,2*n**2),generator=rng))
         >>> q.shape
         torch.Size([2, 3, 3])
@@ -100,9 +100,9 @@ def tf_coe_eig(u):
         >>> torch.set_default_dtype(torch.float64) 
         >>> rng = torch.Generator().manual_seed(7)
 
-        >>> lam = torch.arange(1,4,dtype=float)
-        >>> lam = lam/torch.linalg.norm(lam)
-        >>> n = lam.size(-1)
+        >>> delta = torch.arange(1,4,dtype=float)
+        >>> delta = delta/torch.linalg.norm(delta)
+        >>> n = delta.size(-1)
         >>> q = tf_coe_eig(torch.rand((2,n*(n+1)//2+2*n),generator=rng))
         >>> q.shape
         torch.Size([2, 3, 3])
@@ -151,9 +151,9 @@ def tf_cue_eig(u):
         >>> torch.set_default_dtype(torch.float64) 
         >>> rng = torch.Generator().manual_seed(7)
 
-        >>> lam = torch.arange(1,4,dtype=float)
-        >>> lam = lam/torch.linalg.norm(lam)
-        >>> n = lam.size(-1)
+        >>> delta = torch.arange(1,4,dtype=float)
+        >>> delta = delta/torch.linalg.norm(delta)
+        >>> n = delta.size(-1)
         >>> q = tf_cue_eig(torch.rand((2,n**2+2*n),generator=rng))
         >>> q.shape
         torch.Size([2, 3, 3])
@@ -205,9 +205,9 @@ def tf_cqe_svd(u):
         >>> torch.set_default_dtype(torch.float64) 
         >>> rng = torch.Generator().manual_seed(7)
 
-        >>> lam = torch.arange(1,4,dtype=float)
-        >>> lam = lam/torch.linalg.norm(lam)
-        >>> n = lam.size(-1)
+        >>> delta = torch.arange(1,4,dtype=float)
+        >>> delta = delta/torch.linalg.norm(delta)
+        >>> n = delta.size(-1)
         >>> q = tf_cqe_svd(torch.rand((2,4*n**2),generator=rng))
         >>> q.shape
         torch.Size([2, 6, 6])

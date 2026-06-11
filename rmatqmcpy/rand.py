@@ -275,13 +275,13 @@ def rand_cqe_svd(N, n, seed=None, device="cpu", qp_unif_gen=qp.IIDStdUniform):
     q = tf_cqe_svd(u)
     return q
 
-def rand_flag_real(N, lam, seed=None, rand_coe=rand_coe_qr, qp_unif_gen=qp.IIDStdUniform):
+def rand_flag_real(N, delta, seed=None, rand_coe=rand_coe_qr, qp_unif_gen=qp.IIDStdUniform):
     r"""
     Generate a batch of `N` random real flag matrices of size `(N, n, n)`.
     
     Args:
         N (int): Number of samples to generate.
-        lam (torch.Tensor): Eigenvalues of the flag matrices.
+        delta (torch.Tensor): Eigenvalues of the flag matrices.
         seed (int, optional): Random seed for reproducibility.
         rand_coe (callable, optional): Function to generate random orthogonal matrices.
         qp_unif_gen (qmcpy.DiscreteDistribution, optional): QMCPy distribution generator.
@@ -292,9 +292,9 @@ def rand_flag_real(N, lam, seed=None, rand_coe=rand_coe_qr, qp_unif_gen=qp.IIDSt
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
 
-        >>> lam = torch.arange(1,4,dtype=float)
-        >>> lam = lam/torch.linalg.norm(lam)
-        >>> x = rand_flag_real(2,lam,seed=7)
+        >>> delta = torch.arange(1,4,dtype=float)
+        >>> delta = delta/torch.linalg.norm(delta)
+        >>> x = rand_flag_real(2,delta,seed=7)
         >>> x.shape 
         torch.Size([2, 3, 3])
         >>> x
@@ -307,18 +307,18 @@ def rand_flag_real(N, lam, seed=None, rand_coe=rand_coe_qr, qp_unif_gen=qp.IIDSt
                  [-0.0450,  0.1135,  0.6057]]])
     """
     assert rand_coe in [rand_coe_qr,rand_coe_eig]
-    assert not torch.is_complex(lam)
-    q = rand_coe(N=N,n=lam.size(-1),seed=seed,device=lam.device,qp_unif_gen=qp_unif_gen)
-    x = torch.einsum("...ij,...j,...kj->...ik",q,lam.to(q.dtype),q)
+    assert not torch.is_complex(delta)
+    q = rand_coe(N=N,n=delta.size(-1),seed=seed,device=delta.device,qp_unif_gen=qp_unif_gen)
+    x = torch.einsum("...ij,...j,...kj->...ik",q,delta.to(q.dtype),q)
     return x
 
-def rand_flag_complex(N, lam, seed=None, rand_cue=rand_cue_qr, qp_unif_gen=qp.IIDStdUniform):
+def rand_flag_complex(N, delta, seed=None, rand_cue=rand_cue_qr, qp_unif_gen=qp.IIDStdUniform):
     r"""
     Generate a batch of `N` random complex flag matrices of size `(N, n, n)`.
     
     Args:
         N (int): Number of samples to generate.
-        lam (torch.Tensor): Eigenvalues of the flag matrices.
+        delta (torch.Tensor): Eigenvalues of the flag matrices.
         seed (int, optional): Random seed for reproducibility.
         rand_cue (callable, optional): Function to generate random unitary matrices.
         qp_unif_gen (qmcpy.DiscreteDistribution, optional): QMCPy distribution generator.
@@ -329,9 +329,9 @@ def rand_flag_complex(N, lam, seed=None, rand_cue=rand_cue_qr, qp_unif_gen=qp.II
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
 
-        >>> lam = torch.arange(1,4,dtype=float)
-        >>> lam = lam/torch.linalg.norm(lam)
-        >>> x = rand_flag_complex(2,lam,seed=7)
+        >>> delta = torch.arange(1,4,dtype=float)
+        >>> delta = delta/torch.linalg.norm(delta)
+        >>> x = rand_flag_complex(2,delta,seed=7)
         >>> x.shape 
         torch.Size([2, 3, 3])
         >>> x
@@ -344,18 +344,18 @@ def rand_flag_complex(N, lam, seed=None, rand_cue=rand_cue_qr, qp_unif_gen=qp.II
                  [ 0.1480+1.7041e-01j, -0.0483-2.4620e-02j,  0.5736-3.6136e-18j]]])
     """
     assert rand_cue in [rand_cue_qr,rand_cue_eig]
-    assert not torch.is_complex(lam)
-    q = rand_cue(N=N,n=lam.size(-1),seed=seed,device=lam.device,qp_unif_gen=qp_unif_gen)
-    x = torch.einsum("...ij,...j,...kj->...ik",q,lam.to(q.dtype),q.conj())
+    assert not torch.is_complex(delta)
+    q = rand_cue(N=N,n=delta.size(-1),seed=seed,device=delta.device,qp_unif_gen=qp_unif_gen)
+    x = torch.einsum("...ij,...j,...kj->...ik",q,delta.to(q.dtype),q.conj())
     return x
 
-def rand_flag_quaternionic(N, lam, seed=None, rand_cqe=rand_cqe_svd, qp_unif_gen=qp.IIDStdUniform):
+def rand_flag_quaternionic(N, delta, seed=None, rand_cqe=rand_cqe_svd, qp_unif_gen=qp.IIDStdUniform):
     r"""
     Generate a batch of `N` random quaternionic flag matrices of size `(N, 2n, 2n)`.
     
     Args:
         N (int): Number of samples to generate.
-        lam (torch.Tensor): Eigenvalues of the flag matrices.
+        delta (torch.Tensor): Eigenvalues of the flag matrices.
         seed (int, optional): Random seed for reproducibility.
         rand_cqe (callable, optional): Function to generate random symplectic unitary matrices.
         qp_unif_gen (qmcpy.DiscreteDistribution, optional): QMCPy distribution generator.
@@ -366,9 +366,9 @@ def rand_flag_quaternionic(N, lam, seed=None, rand_cqe=rand_cqe_svd, qp_unif_gen
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
 
-        >>> lam = torch.arange(1,4,dtype=float)
-        >>> lam = lam/torch.linalg.norm(lam)
-        >>> x = rand_flag_quaternionic(2,lam,seed=7)
+        >>> delta = torch.arange(1,4,dtype=float)
+        >>> delta = delta/torch.linalg.norm(delta)
+        >>> x = rand_flag_quaternionic(2,delta,seed=7)
         >>> x.shape 
         torch.Size([2, 6, 6])
         >>> torch.complex(x.real.round(decimals=4)+0.,x.imag.round(decimals=4)+0.)
@@ -399,13 +399,13 @@ def rand_flag_quaternionic(N, lam, seed=None, rand_cqe=rand_cqe_svd, qp_unif_gen
                    0.0028-0.2075j,  0.0545+0.0000j]]])
     """
     assert rand_cqe in [rand_cqe_svd]
-    assert not torch.is_complex(lam)
-    n = lam.size(-1)
-    q = rand_cqe(N=N,n=n,seed=seed,device=lam.device,qp_unif_gen=qp_unif_gen)
-    I_nn = torch.diag(torch.cat([torch.ones(n,device=lam.device),-torch.ones(n,device=lam.device)])).to(q.dtype)
+    assert not torch.is_complex(delta)
+    n = delta.size(-1)
+    q = rand_cqe(N=N,n=n,seed=seed,device=delta.device,qp_unif_gen=qp_unif_gen)
+    I_nn = torch.diag(torch.cat([torch.ones(n,device=delta.device),-torch.ones(n,device=delta.device)])).to(q.dtype)
     q_H = q.conj().transpose(-2,-1)
     q_left_corner = torch.einsum("ij,...jk,kl->...il",I_nn,q_H,I_nn)
-    lam_paired = torch.cat([lam,lam],dim=-1)
+    lam_paired = torch.cat([delta,delta],dim=-1)
     x = torch.einsum("...ij,...j,...jk->...ik",q,lam_paired.to(q.dtype),q_left_corner)
     return x
 
@@ -735,8 +735,8 @@ def rand_gr_real(N, n, k, seed=None, rand_coe=rand_coe_qr, qp_unif_gen=qp.IIDStd
     """
     assert rand_coe in [rand_coe_qr,rand_coe_eig]
     assert 1<=k<=n
-    lam = torch.cat([torch.ones(k,device=device),-torch.ones(n-k,device=device)])
-    x = rand_flag_real(N=N,lam=lam,seed=seed,rand_coe=rand_coe,qp_unif_gen=qp_unif_gen)
+    delta = torch.cat([torch.ones(k,device=device),-torch.ones(n-k,device=device)])
+    x = rand_flag_real(N=N,delta=delta,seed=seed,rand_coe=rand_coe,qp_unif_gen=qp_unif_gen)
     return x
 
 def rand_gr_complex(N, n, k, seed=None, rand_cue=rand_cue_qr, qp_unif_gen=qp.IIDStdUniform, device="cpu"):
@@ -782,8 +782,8 @@ def rand_gr_complex(N, n, k, seed=None, rand_cue=rand_cue_qr, qp_unif_gen=qp.IID
     """
     assert rand_cue in [rand_cue_qr,rand_cue_eig]
     assert 1<=k<=n
-    lam = torch.cat([torch.ones(k,device=device),-torch.ones(n-k,device=device)])
-    x = rand_flag_complex(N=N,lam=lam,seed=seed,rand_cue=rand_cue,qp_unif_gen=qp_unif_gen)
+    delta = torch.cat([torch.ones(k,device=device),-torch.ones(n-k,device=device)])
+    x = rand_flag_complex(N=N,delta=delta,seed=seed,rand_cue=rand_cue,qp_unif_gen=qp_unif_gen)
     return x
 
 def rand_gr_quaternionic(N, n, k, seed=None, rand_cqe=rand_cqe_svd, qp_unif_gen=qp.IIDStdUniform, device="cpu"):
@@ -845,6 +845,6 @@ def rand_gr_quaternionic(N, n, k, seed=None, rand_cqe=rand_cqe_svd, qp_unif_gen=
     """
     assert rand_cqe in [rand_cqe_svd]
     assert 1<=k<=n
-    lam = torch.cat([torch.ones(k,device=device),-torch.ones(n-k,device=device)])
-    x = rand_flag_quaternionic(N=N,lam=lam,seed=seed,rand_cqe=rand_cqe,qp_unif_gen=qp_unif_gen)
+    delta = torch.cat([torch.ones(k,device=device),-torch.ones(n-k,device=device)])
+    x = rand_flag_quaternionic(N=N,delta=delta,seed=seed,rand_cqe=rand_cqe,qp_unif_gen=qp_unif_gen)
     return x
