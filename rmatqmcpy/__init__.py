@@ -1,9 +1,8 @@
 __version__ = "0.1"
 
 from .kernels import (
-    compute_tau_int_traceXY_topow_r,
-    KernelPolyFlag,
-    KernelMaternChordal,
+    KernelPoly,
+    KernelMatern,
 )
 from .transforms import (
     tf_coe_qr,
