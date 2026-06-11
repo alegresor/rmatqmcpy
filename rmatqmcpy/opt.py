@@ -1,7 +1,7 @@
 import torch 
 
 from .kernels import KernelMatern
-from .rand_stiefel_gr_flag_lgr import rand_flag_real
+from .rand_Stiefel_Gr_flag_LGr import rand_flag_R
 
 def opt_weights_sum_1(x, kernel, dims=2, eps=1e-12):
     r"""
@@ -20,7 +20,7 @@ def opt_weights_sum_1(x, kernel, dims=2, eps=1e-12):
         >>> torch.set_default_dtype(torch.float64) 
 
         >>> kernel = KernelMatern(nu=1/2)
-        >>> x = rand_flag_real(3,7,seed=7)
+        >>> x = rand_flag_R(3,7,seed=7)
         >>> x.shape
         torch.Size([3, 7, 7])
         >>> w = opt_weights_sum_1(x,kernel)
@@ -29,9 +29,9 @@ def opt_weights_sum_1(x, kernel, dims=2, eps=1e-12):
         >>> w.sum() 
         tensor(1.)
         >>> w
-        tensor([0.3491, 0.3077, 0.3432])
+        tensor([0.3506, 0.3218, 0.3276])
 
-        >>> x2 = rand_flag_real(3,7,seed=11)
+        >>> x2 = rand_flag_R(3,7,seed=11)
         >>> xfull = torch.stack([x,x2],dim=0)
         >>> xfull.shape 
         torch.Size([2, 3, 7, 7])
@@ -39,10 +39,10 @@ def opt_weights_sum_1(x, kernel, dims=2, eps=1e-12):
         >>> wfull.shape 
         torch.Size([2, 3])
         >>> wfull.sum(-1) 
-        tensor([1.0000, 1.0000])
+        tensor([1., 1.])
         >>> wfull
-        tensor([[0.3491, 0.3077, 0.3432],
-                [0.3093, 0.3534, 0.3373]])
+        tensor([[0.3506, 0.3218, 0.3276],
+                [0.3015, 0.3055, 0.3931]])
     """
     assert x.ndim>=(dims+1)
     kmat = kernel(x.unsqueeze(-dims-1),x.unsqueeze(-dims-2),dim=tuple(j for j in range(-dims,0,1))) # (...,N,N)
@@ -72,7 +72,7 @@ def wce_squared_plus_kernel_integral(x, kernel, w, dims=2):
         >>> torch.set_default_dtype(torch.float64) 
 
         >>> kernel = KernelMatern(nu=1/2)
-        >>> x = rand_flag_real(3,7,seed=7)
+        >>> x = rand_flag_R(3,7,seed=7)
         >>> x.shape
         torch.Size([3, 7, 7])
         >>> w = opt_weights_sum_1(x,kernel)
@@ -81,12 +81,12 @@ def wce_squared_plus_kernel_integral(x, kernel, w, dims=2):
         >>> w.sum() 
         tensor(1.)
         >>> w
-        tensor([0.3491, 0.3077, 0.3432])
+        tensor([0.3506, 0.3218, 0.3276])
         >>> 
         >>> wce_squared_plus_kernel_integral(x,kernel,w)
-        tensor(0.6938)
+        tensor(0.7027)
 
-        >>> x2 = rand_flag_real(3,7,seed=11)
+        >>> x2 = rand_flag_R(3,7,seed=11)
         >>> xfull = torch.stack([x,x2],dim=0)
         >>> xfull.shape 
         torch.Size([2, 3, 7, 7])
@@ -94,12 +94,12 @@ def wce_squared_plus_kernel_integral(x, kernel, w, dims=2):
         >>> wfull.shape 
         torch.Size([2, 3])
         >>> wfull.sum(-1) 
-        tensor([1.0000, 1.0000])
+        tensor([1., 1.])
         >>> wfull
-        tensor([[0.3491, 0.3077, 0.3432],
-                [0.3093, 0.3534, 0.3373]])
+        tensor([[0.3506, 0.3218, 0.3276],
+                [0.3015, 0.3055, 0.3931]])
         >>> wce_squared_plus_kernel_integral(xfull,kernel,wfull)
-        tensor([0.6938, 0.6875])
+        tensor([0.7027, 0.7009])
     """
     assert x.ndim>=(dims+1)
     assert w.shape==x.shape[:-dims]

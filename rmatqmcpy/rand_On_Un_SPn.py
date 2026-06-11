@@ -3,15 +3,15 @@ import torch
 import numpy as np
 import qmcpy as qp 
 
-from .tf_coe_cue_cqe import (
-    tf_coe_qr,
-    tf_coe_eig,
-    tf_cue_qr,
-    tf_cue_eig,
-    tf_cqe_svd,
+from .tf_On_Un_SPn import (
+    tf_On_QR,
+    tf_On_eig,
+    tf_Un_QR,
+    tf_Un_eig,
+    tf_Spn_SVD,
 )
 
-def rand_coe_qr(N, n, seed=None, device=None, qp_unif_gen=None):
+def rand_On_QR(N, n, seed=None, device=None, qp_unif_gen=None):
     r"""
     Generate a batch of `N` random orthogonal matrices of size `(N, n, n)` using the QR decomposition. 
     
@@ -29,7 +29,7 @@ def rand_coe_qr(N, n, seed=None, device=None, qp_unif_gen=None):
         >>> torch.set_default_dtype(torch.float64) 
 
         
-        >>> q = rand_coe_qr(2,3,seed=7)
+        >>> q = rand_On_QR(2,3,seed=7)
         >>> q.shape 
         torch.Size([2, 3, 3])
         >>> q
@@ -41,7 +41,7 @@ def rand_coe_qr(N, n, seed=None, device=None, qp_unif_gen=None):
                  [-0.5690,  0.3904,  0.7237],
                  [ 0.0820, -0.8488,  0.5224]]])
         
-        >>> q = rand_coe_qr(2,3,seed=7,qp_unif_gen=qp.Net)
+        >>> q = rand_On_QR(2,3,seed=7,qp_unif_gen=qp.Net)
         >>> q.shape 
         torch.Size([2, 3, 3])
         >>> q
@@ -56,10 +56,10 @@ def rand_coe_qr(N, n, seed=None, device=None, qp_unif_gen=None):
     if qp_unif_gen is None: qp_unif_gen = qp.IIDStdUniform
     rng = agsutil.get_torch_rng(seed,device=device)
     u = torch.from_numpy(qp_unif_gen(dimension=n**2,seed=seed)(N)).to(device)
-    q = tf_coe_qr(u)
+    q = tf_On_QR(u)
     return q
 
-def rand_cue_qr(N, n, seed=None, device=None, qp_unif_gen=None):
+def rand_Un_QR(N, n, seed=None, device=None, qp_unif_gen=None):
     r"""
     Generate a batch of `N` random unitary matrices of size `(N, n, n)` using the QR decomposition. 
     
@@ -76,7 +76,7 @@ def rand_cue_qr(N, n, seed=None, device=None, qp_unif_gen=None):
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
 
-        >>> q = rand_cue_qr(2,3,seed=7)
+        >>> q = rand_Un_QR(2,3,seed=7)
         >>> q.shape 
         torch.Size([2, 3, 3])
         >>> q
@@ -88,7 +88,7 @@ def rand_cue_qr(N, n, seed=None, device=None, qp_unif_gen=None):
                  [ 0.1241+0.1499j, -0.6573-0.5715j,  0.3584+0.2739j],
                  [ 0.1027-0.5515j, -0.0820-0.4666j, -0.2046-0.6473j]]])
         
-        >>> q = rand_cue_qr(2,3,seed=7,qp_unif_gen=qp.Net)
+        >>> q = rand_Un_QR(2,3,seed=7,qp_unif_gen=qp.Net)
         >>> q.shape 
         torch.Size([2, 3, 3])
         >>> q
@@ -103,10 +103,10 @@ def rand_cue_qr(N, n, seed=None, device=None, qp_unif_gen=None):
     if qp_unif_gen is None: qp_unif_gen = qp.IIDStdUniform
     rng = agsutil.get_torch_rng(seed,device=device)
     u = torch.from_numpy(qp_unif_gen(dimension=2*n**2,seed=seed)(N)).to(device)
-    q = tf_cue_qr(u)
+    q = tf_Un_QR(u)
     return q
 
-def rand_coe_eig(N, n, seed=None, device=None, qp_unif_gen=None):
+def rand_On_eig(N, n, seed=None, device=None, qp_unif_gen=None):
     r"""
     Generate a batch of `N` random orthogonal matrices of size `(N, n, n)` using the eigenvalue decomposition.
     
@@ -123,36 +123,36 @@ def rand_coe_eig(N, n, seed=None, device=None, qp_unif_gen=None):
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
 
-        >>> q = rand_coe_eig(2,3,seed=7)
+        >>> q = rand_On_eig(2,3,seed=7)
         >>> q.shape 
         torch.Size([2, 3, 3])
         >>> q
-        tensor([[[-0.9005, -0.4348, -0.0030],
-                 [ 0.2592, -0.5312, -0.8066],
-                 [ 0.3491, -0.7271,  0.5911]],
+        tensor([[[ 0.3748,  0.4469, -0.8123],
+                 [-0.1178, -0.8461, -0.5199],
+                 [ 0.9196, -0.2905,  0.2645]],
         <BLANKLINE>
-                [[ 0.2322,  0.3624, -0.9026],
-                 [ 0.9409, -0.3190,  0.1140],
-                 [-0.2467, -0.8757, -0.4150]]])
+                [[ 0.9026, -0.2322, -0.3624],
+                 [-0.1140, -0.9409,  0.3190],
+                 [ 0.4150,  0.2467,  0.8757]]])
         
-        >>> q = rand_coe_eig(2,3,seed=7,qp_unif_gen=qp.Net)
+        >>> q = rand_On_eig(2,3,seed=7,qp_unif_gen=qp.Net)
         >>> q.shape 
         torch.Size([2, 3, 3])
         >>> q
-        tensor([[[ 0.2150, -0.7427,  0.6341],
-                 [-0.9324,  0.0370,  0.3595],
-                 [ 0.2905,  0.6685,  0.6846]],
+        tensor([[[-0.7446, -0.3508,  0.5679],
+                 [-0.5217,  0.8366, -0.1671],
+                 [-0.4165, -0.4207, -0.8060]],
         <BLANKLINE>
-                [[ 0.9117, -0.0349,  0.4094],
-                 [ 0.2656,  0.8102, -0.5226],
-                 [ 0.3134, -0.5851, -0.7479]]])
+                [[-0.0434, -0.8815,  0.4702],
+                 [-0.2524,  0.4650,  0.8486],
+                 [ 0.9666,  0.0818,  0.2427]]])
     """
     if qp_unif_gen is None: qp_unif_gen = qp.IIDStdUniform
-    u = torch.from_numpy(qp_unif_gen(dimension=n*(n+1)//2+2*n,seed=seed)(N)).to(device)
-    q = tf_coe_eig(u)
+    u = torch.from_numpy(qp_unif_gen(dimension=n*(n-1)//2+2*n,seed=seed)(N)).to(device)
+    q = tf_On_eig(u)
     return q
 
-def rand_cue_eig(N, n, seed=None, device=None, qp_unif_gen=None):
+def rand_Un_eig(N, n, seed=None, device=None, qp_unif_gen=None):
     r"""
     Generate a batch of `N` random unitary matrices of size `(N, n, n)` using the eigenvalue decomposition.
     
@@ -169,36 +169,36 @@ def rand_cue_eig(N, n, seed=None, device=None, qp_unif_gen=None):
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
 
-        >>> q = rand_cue_eig(2,3,seed=7)
+        >>> q = rand_Un_eig(2,3,seed=7)
         >>> q.shape 
         torch.Size([2, 3, 3])
         >>> q
-        tensor([[[-0.7999-0.3030j, -0.1347-0.4416j, -0.0308-0.2330j],
-                 [ 0.2180+0.0408j, -0.5586-0.2853j,  0.7457-0.0362j],
-                 [ 0.3826-0.2699j, -0.5249-0.3433j, -0.6181+0.0734j]],
+        tensor([[[-0.4009-0.1134j,  0.5152+0.3147j, -0.4627+0.4978j],
+                 [-0.0383-0.0098j, -0.5419+0.5188j,  0.3717+0.5453j],
+                 [-0.5107-0.7510j, -0.0557-0.2638j,  0.3130-0.0670j]],
         <BLANKLINE>
-                [[-0.1474-0.0856j,  0.3710-0.4748j, -0.6285-0.4614j],
-                 [ 0.2958+0.8971j,  0.2207-0.2072j,  0.1219-0.0362j],
-                 [-0.2346-0.1540j, -0.0932-0.7325j,  0.6111-0.0500j]]])
+                [[ 0.1113+0.1290j,  0.0108-0.7796j, -0.3388+0.4983j],
+                 [ 0.0135-0.9445j,  0.1002+0.0782j, -0.2065+0.2213j],
+                 [ 0.1714+0.2221j,  0.3955+0.4685j,  0.1415+0.7248j]]])
         
-        >>> q = rand_cue_eig(2,3,seed=7,qp_unif_gen=qp.Net)
+        >>> q = rand_Un_eig(2,3,seed=7,qp_unif_gen=qp.Net)
         >>> q.shape 
         torch.Size([2, 3, 3])
         >>> q
-        tensor([[[-0.4215-0.7588j,  0.4406+0.0016j, -0.2176+0.0711j],
-                 [-0.3701+0.2593j,  0.2614+0.6915j,  0.1970-0.4589j],
-                 [-0.0046+0.2058j,  0.0371+0.5080j, -0.3877+0.7402j]],
+        tensor([[[ 0.5988-0.2838j, -0.3694+0.2998j, -0.5360+0.2174j],
+                 [ 0.0116-0.3634j,  0.6324-0.2327j, -0.5162-0.3838j],
+                 [-0.6395+0.1405j, -0.2209+0.5204j, -0.4418-0.2376j]],
         <BLANKLINE>
-                [[ 0.5386-0.4166j, -0.1877+0.1013j, -0.5136-0.4766j],
-                 [ 0.4655+0.4044j,  0.6083+0.2491j, -0.3016+0.3109j],
-                 [-0.0103+0.3949j, -0.3730-0.6191j, -0.5221+0.2211j]]])
+                [[-0.6903+0.0581j, -0.1665+0.1366j, -0.4519-0.5192j],
+                 [-0.6830+0.0339j,  0.0105-0.3853j,  0.3131+0.5346j],
+                 [-0.2250-0.0432j,  0.2931+0.8480j,  0.3613+0.1091j]]])
     """
     if qp_unif_gen is None: qp_unif_gen = qp.IIDStdUniform
-    u = torch.from_numpy(qp_unif_gen(dimension=n**2+2*n,seed=seed)(N)).to(device)
-    q = tf_cue_eig(u)
+    u = torch.from_numpy(qp_unif_gen(dimension=n**2+n,seed=seed)(N)).to(device)
+    q = tf_Un_eig(u)
     return q
 
-def rand_cqe_svd(N, n, seed=None, device=None, qp_unif_gen=None):
+def rand_Spn_SVD(N, n, seed=None, device=None, qp_unif_gen=None):
     r"""
     Generate a batch of `N` random symplectic unitary matrices of size `(N, 2n, 2n)` using the SVD decomposition. 
     
@@ -215,7 +215,7 @@ def rand_cqe_svd(N, n, seed=None, device=None, qp_unif_gen=None):
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
 
-        >>> q = rand_cqe_svd(2,3,seed=7)
+        >>> q = rand_Spn_SVD(2,3,seed=7)
         >>> q.shape 
         torch.Size([2, 6, 6])
         >>> q
@@ -245,7 +245,7 @@ def rand_cqe_svd(N, n, seed=None, device=None, qp_unif_gen=None):
                  [-0.2102+0.2346j,  0.2066-0.4166j, -0.2735+0.3259j,  0.1009-0.1924j,
                    0.1127+0.3529j,  0.5547-0.1064j]]])
         
-        >>> q = rand_cqe_svd(2,3,seed=7,qp_unif_gen=qp.Net)
+        >>> q = rand_Spn_SVD(2,3,seed=7,qp_unif_gen=qp.Net)
         >>> q.shape 
         torch.Size([2, 6, 6])
         >>> q
@@ -277,5 +277,5 @@ def rand_cqe_svd(N, n, seed=None, device=None, qp_unif_gen=None):
     """
     if qp_unif_gen is None: qp_unif_gen = qp.IIDStdUniform
     u = torch.from_numpy(qp_unif_gen(dimension=4*n**2,seed=seed)(N)).to(device)
-    q = tf_cqe_svd(u)
+    q = tf_Spn_SVD(u)
     return q

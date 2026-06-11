@@ -2,7 +2,7 @@ import agsutil
 import torch 
 import numpy as np
 
-def tf_coe_qr(u):
+def tf_On_QR(u):
     r"""
     Transform uniform samples to random orthogonal matrices (COE) using QR decomposition.
 
@@ -19,7 +19,7 @@ def tf_coe_qr(u):
         >>> delta = torch.arange(1,4,dtype=float)
         >>> delta = delta/torch.linalg.norm(delta)
         >>> n = delta.size(-1)
-        >>> q = tf_coe_qr(torch.rand((2,n**2),generator=rng))
+        >>> q = tf_On_QR(torch.rand((2,n**2),generator=rng))
         >>> q.shape
         torch.Size([2, 3, 3])
         >>> q
@@ -43,7 +43,7 @@ def tf_coe_qr(u):
     # assert torch.allclose(torch.einsum("...ij,...jk->...ik",q,r*d[...,:,None]),v)
     return q
 
-def tf_cue_qr(u):
+def tf_Un_QR(u):
     r"""
     Transform uniform samples to random unitary matrices (CUE) using QR decomposition.
 
@@ -60,7 +60,7 @@ def tf_cue_qr(u):
         >>> delta = torch.arange(1,4,dtype=float)
         >>> delta = delta/torch.linalg.norm(delta)
         >>> n = delta.size(-1)
-        >>> q = tf_cue_qr(torch.rand((2,2*n**2),generator=rng))
+        >>> q = tf_Un_QR(torch.rand((2,2*n**2),generator=rng))
         >>> q.shape
         torch.Size([2, 3, 3])
         >>> q
@@ -86,7 +86,7 @@ def tf_cue_qr(u):
     # assert torch.allclose(torch.einsum("...ij,...jk->...ik",q,r*ph[..., :, None].conj()),v_complex)
     return q
 
-def tf_coe_eig(u):
+def tf_On_eig(u):
     r"""
     Transform uniform samples to random orthogonal matrices (COE) using eigenvalue decomposition.
 
@@ -103,41 +103,41 @@ def tf_coe_eig(u):
         >>> delta = torch.arange(1,4,dtype=float)
         >>> delta = delta/torch.linalg.norm(delta)
         >>> n = delta.size(-1)
-        >>> q = tf_coe_eig(torch.rand((2,n*(n+1)//2+2*n),generator=rng))
+        >>> q = tf_On_eig(torch.rand((2,2*n+n*(n-1)//2),generator=rng))
         >>> q.shape
         torch.Size([2, 3, 3])
         >>> q
-        tensor([[[-0.4010,  0.2775, -0.8731],
-                 [-0.3006, -0.9401, -0.1607],
-                 [-0.8654,  0.1980,  0.4604]],
+        tensor([[[-0.8410,  0.5062, -0.1912],
+                 [-0.4034, -0.3511,  0.8450],
+                 [ 0.3606,  0.7877,  0.4995]],
         <BLANKLINE>
-                [[-0.6765,  0.5182, -0.5232],
-                 [ 0.1492,  0.7922,  0.5917],
-                 [ 0.7211,  0.3223, -0.6133]]])
+                [[ 0.5232, -0.5182,  0.6765],
+                 [-0.5917, -0.7922, -0.1492],
+                 [ 0.6133, -0.3223, -0.7211]]])
         >>> torch.allclose(torch.einsum("...ij,...kj->...ik",q,q),torch.eye(n))
         True
     """
-    n = int(np.round((-5+np.sqrt(25+8*u.size(-1)))/2))
-    assert u.size(-1)==(n*(n+1)//2+2*n)
+    n = int(np.round((-3+np.sqrt(9+8*u.size(-1)))/2))
+    num_tril = n*(n-1)//2
+    assert u.size(-1)==(2*n+num_tril)
     assert (0<=u).all()
     assert (u<=1).all()
-    num_tril = n*(n-1)//2
-    alpha = agsutil.icdf_std_normal(u[...,:n])
-    beta = agsutil.icdf_std_normal(u[...,n:n+num_tril])/np.sqrt(2)
-    signs = torch.where(u[...,n+num_tril:n+num_tril+n]>1/2,1.,-1.).to(u.device)
-    perms = u[...,n+num_tril+n:].argsort(-1)
+    signs = torch.where(u[...,:n]>1/2,1.,-1.).to(u.device)
+    alpha = agsutil.icdf_std_normal(u[...,n:2*n])*np.sqrt(2)
+    beta = agsutil.icdf_std_normal(u[...,2*n:2*n+num_tril])
     il0,il1 = torch.tril_indices(n,n,offset=-1,device=u.device)
-    v = torch.eye(n,device=u.device)*alpha[...,None]
+    v = torch.zeros((*u.shape[:-1],n,n),dtype=u.dtype,device=u.device)
+    diag_indices = torch.arange(n,device=u.device)
+    v[...,diag_indices,diag_indices] = alpha
     v[...,il0,il1] = beta
     v += v.tril(-1).transpose(dim0=-2,dim1=-1)
-    # assert torch.allclose(v[...,torch.arange(n,device=u.device),torch.arange(n,device=u.device)],alpha)
+    assert torch.allclose(v[...,torch.arange(n,device=u.device),torch.arange(n,device=u.device)],alpha)
     gamma,q = torch.linalg.eigh(v)
     q = q*signs[...,None,:]
     # assert torch.allclose(torch.einsum("...ij,...j,...kj->...ik",q,gamma,q),v)
-    q = torch.gather(q,dim=-1,index=perms[...,None,:].expand_as(q))
     return q
 
-def tf_cue_eig(u):
+def tf_Un_eig(u):
     r"""
     Transform uniform samples to random unitary matrices (CUE) using eigenvalue decomposition.
 
@@ -154,33 +154,34 @@ def tf_cue_eig(u):
         >>> delta = torch.arange(1,4,dtype=float)
         >>> delta = delta/torch.linalg.norm(delta)
         >>> n = delta.size(-1)
-        >>> q = tf_cue_eig(torch.rand((2,n**2+2*n),generator=rng))
+        >>> q = tf_Un_eig(torch.rand((2,n**2+n),generator=rng))
         >>> q.shape
         torch.Size([2, 3, 3])
         >>> q
-        tensor([[[ 0.4933+0.2062j, -0.3761-0.1423j,  0.0437-0.7420j],
-                 [-0.1455-0.7220j, -0.3441+0.1009j,  0.5631-0.1091j],
-                 [-0.3802+0.1649j, -0.7717-0.3380j, -0.2524+0.2341j]],
+        tensor([[[ 0.1184-0.6343j, -0.1075+0.7167j,  0.1566-0.1844j],
+                 [-0.1909-0.4149j, -0.0457-0.5509j,  0.6462-0.2611j],
+                 [ 0.6050+0.0953j,  0.3971-0.1076j, -0.0938-0.6685j]],
         <BLANKLINE>
-                [[-0.0814-0.6795j, -0.2821+0.2191j, -0.6032+0.2004j],
-                 [ 0.0860+0.4265j, -0.3979+0.7882j, -0.0729-0.1606j],
-                 [-0.1979+0.5507j,  0.1467-0.2669j, -0.7512+0.0238j]]])
+                [[-0.1771-0.3102j,  0.6653+0.1603j, -0.4573-0.4415j],
+                 [-0.7242-0.5052j, -0.4297-0.0679j,  0.1084-0.1391j],
+                 [ 0.2435+0.1829j, -0.4473-0.3773j, -0.3695-0.6544j]]])
         >>> torch.allclose(torch.einsum("...ij,...kj->...ik",q,q.conj()),torch.eye(n,dtype=q.dtype))
         True
     """
-    n = int(np.round((-1+np.sqrt(1+u.size(-1)))))
-    assert u.size(-1)==(n**2+2*n)
+    n = int(np.round((-1+np.sqrt(1+4*u.size(-1)))/2))
+    assert u.size(-1)==(n**2+n)
     assert (0<=u).all()
     assert (u<=1).all()
     num_tril = n*(n-1)//2
-    alpha = agsutil.icdf_std_normal(u[...,:n])
+    alpha = agsutil.icdf_std_normal(u[...,n:2*n])*np.sqrt(2)
     beta = torch.complex(
-        agsutil.icdf_std_normal(u[...,n:n+num_tril])/np.sqrt(2),
-        agsutil.icdf_std_normal(u[...,n+num_tril:n+2*num_tril])/np.sqrt(2))
-    theta = 2*np.pi*u[...,n+2*num_tril:n+2*num_tril+n]
-    perms = u[...,n+2*num_tril+n:].argsort(-1)
+        agsutil.icdf_std_normal(u[...,2*n:2*n+num_tril]),
+        agsutil.icdf_std_normal(u[...,2*n+num_tril:]))
+    theta = 2*np.pi*u[...,:n]
     il0,il1 = torch.tril_indices(n,n,offset=-1,device=u.device)
-    v = torch.eye(n,device=u.device,dtype=beta.dtype)*alpha[...,None].to(beta.dtype)
+    v = torch.zeros((*u.shape[:-1],n,n),dtype=beta.dtype,device=u.device)
+    diag_indices = torch.arange(n,device=u.device)
+    v[...,diag_indices,diag_indices] = alpha.to(beta.dtype)
     v[...,il0,il1] = beta
     v += v.tril(-1).conj().transpose(dim0=-2,dim1=-1)
     # assert torch.allclose(v[...,torch.arange(n,device=u.device),torch.arange(n,device=u.device)],alpha.to(v.dtype))
@@ -188,10 +189,9 @@ def tf_cue_eig(u):
     phases = torch.complex(torch.cos(theta),torch.sin(theta))
     q = q*phases[...,None,:]
     # assert torch.allclose(torch.einsum("...ij,...j,...kj->...ik",q,gamma,q.conj()),v)
-    q = torch.gather(q,dim=-1,index=perms[...,None,:].expand_as(q))
     return q
 
-def tf_cqe_svd(u):
+def tf_Spn_SVD(u):
     r"""
     Transform uniform samples to random symplectic unitary matrices (CQE) using SVD.
 
@@ -208,7 +208,7 @@ def tf_cqe_svd(u):
         >>> delta = torch.arange(1,4,dtype=float)
         >>> delta = delta/torch.linalg.norm(delta)
         >>> n = delta.size(-1)
-        >>> q = tf_cqe_svd(torch.rand((2,4*n**2),generator=rng))
+        >>> q = tf_Spn_SVD(torch.rand((2,4*n**2),generator=rng))
         >>> q.shape
         torch.Size([2, 6, 6])
         >>> q

@@ -2,19 +2,19 @@ import agsutil
 import torch 
 import numpy as np
 
-from .rand_stiefel_gr_flag_lgr import (
-    rand_flag_real,
-    rand_flag_complex,
-    rand_flag_quaternionic,
-    rand_stiefel_real,
-    rand_stiefel_complex,
-    rand_stiefel_quaternionic,
-    rand_gr_real,
-    rand_gr_complex,
-    rand_gr_quaternionic,
-    rand_lgr_real,
-    rand_lgr_complex,
-    rand_lgr_quaternionic,
+from .rand_Stiefel_Gr_flag_LGr import (
+    rand_flag_R,
+    rand_flag_C,
+    rand_flag_H,
+    rand_Stiefel_R,
+    rand_Stiefel_C,
+    rand_Stiefel_H,
+    rand_Gr_R,
+    rand_Gr_C,
+    rand_Gr_H,
+    rand_LGr_R,
+    rand_LGr_C,
+    rand_LGr_H,
 )
 
 class KernelMatern(object):
@@ -31,30 +31,30 @@ class KernelMatern(object):
 
         >>> kernel = KernelMatern(nu=1/2)
 
-        >>> x = rand_flag_real(3,7,seed=7)
+        >>> x = rand_flag_R(3,7,seed=7)
         >>> x.shape 
         torch.Size([3, 7, 7])
         >>> k = kernel(x[:,None,:,:],x[None,:,:,:])
         >>> k.shape 
         torch.Size([3, 3])
         >>> k
-        tensor([[1.0000, 0.5531, 0.5085],
-                [0.5531, 1.0000, 0.5625],
-                [0.5085, 0.5625, 1.0000]])
+        tensor([[1.0000, 0.5458, 0.5388],
+                [0.5458, 1.0000, 0.5787],
+                [0.5388, 0.5787, 1.0000]])
         
         >>> for rand_manifold in [
-        ...         rand_flag_real,
-        ...         rand_flag_complex,
-        ...         rand_flag_quaternionic,
-        ...         rand_stiefel_real,
-        ...         rand_stiefel_complex,
-        ...         rand_stiefel_quaternionic,
-        ...         rand_gr_real,
-        ...         rand_gr_complex,
-        ...         rand_gr_quaternionic,
-        ...         rand_lgr_real,
-        ...         rand_lgr_complex,
-        ...         rand_lgr_quaternionic,]:
+        ...         rand_flag_R,
+        ...         rand_flag_C,
+        ...         rand_flag_H,
+        ...         rand_Stiefel_R,
+        ...         rand_Stiefel_C,
+        ...         rand_Stiefel_H,
+        ...         rand_Gr_R,
+        ...         rand_Gr_C,
+        ...         rand_Gr_H,
+        ...         rand_LGr_R,
+        ...         rand_LGr_C,
+        ...         rand_LGr_H,]:
         ...     x = rand_manifold(3,7,seed=7)
         ...     for nu in [1/2,3/2,5/2,7/2,9/2,11/2,13/2,np.inf]:
         ...         kernel = KernelMatern(nu=nu)
@@ -128,30 +128,30 @@ class KernelPoly(object):
 
         >>> kernel = KernelPoly()
 
-        >>> x = rand_flag_real(3,7,seed=7)
+        >>> x = rand_flag_R(3,7,seed=7)
         >>> x.shape 
         torch.Size([3, 7, 7])
         >>> k = kernel(x[:,None,:,:],x[None,:,:,:])
         >>> k.shape 
         torch.Size([3, 3])
         >>> k
-        tensor([[4.0000, 3.3292, 3.1376],
-                [3.3292, 4.0000, 3.3655],
-                [3.1376, 3.3655, 4.0000]])
+        tensor([[4.0000, 3.3004, 3.2718],
+                [3.3004, 4.0000, 3.4239],
+                [3.2718, 3.4239, 4.0000]])
         
         >>> for rand_manifold in [
-        ...         rand_flag_real,
-        ...         rand_flag_complex,
-        ...         rand_flag_quaternionic,
-        ...         rand_stiefel_real,
-        ...         rand_stiefel_complex,
-        ...         rand_stiefel_quaternionic,
-        ...         rand_gr_real,
-        ...         rand_gr_complex,
-        ...         rand_gr_quaternionic,
-        ...         rand_lgr_real,
-        ...         rand_lgr_complex,
-        ...         rand_lgr_quaternionic,]:
+        ...         rand_flag_R,
+        ...         rand_flag_C,
+        ...         rand_flag_H,
+        ...         rand_Stiefel_R,
+        ...         rand_Stiefel_C,
+        ...         rand_Stiefel_H,
+        ...         rand_Gr_R,
+        ...         rand_Gr_C,
+        ...         rand_Gr_H,
+        ...         rand_LGr_R,
+        ...         rand_LGr_C,
+        ...         rand_LGr_H,]:
         ...     x = rand_manifold(3,7,seed=7)
         ...     k = kernel(x[:,None,:,:],x[None,:,:,:])
         ...     assert k.shape==(3,3)

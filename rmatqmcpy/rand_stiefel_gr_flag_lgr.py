@@ -3,15 +3,15 @@ import torch
 import numpy as np
 import qmcpy as qp
 
-from .rand_coe_cue_cqe import (
-  rand_coe_qr,
-  rand_cue_qr,
-  rand_coe_eig,
-  rand_cue_eig,
-  rand_cqe_svd,
+from .rand_On_Un_SPn import (
+  rand_On_QR,
+  rand_Un_QR,
+  rand_On_eig,
+  rand_Un_eig,
+  rand_Spn_SVD,
 )
 
-def rand_flag_real(N, n, delta=None, seed=None, rand_coe=None, qp_unif_gen=None, device=None):
+def rand_flag_R(N, n, delta=None, seed=None, rand_coe=None, qp_unif_gen=None, device=None):
     r"""
     Generate a batch of `N` random real flag matrices of size `(N, n, n)`.
     
@@ -30,17 +30,17 @@ def rand_flag_real(N, n, delta=None, seed=None, rand_coe=None, qp_unif_gen=None,
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
 
-        >>> x = rand_flag_real(2,3,seed=7)
+        >>> x = rand_flag_R(2,3,seed=7)
         >>> x.shape 
         torch.Size([2, 3, 3])
         >>> x
-        tensor([[[ 0.3178,  0.0630,  0.0835],
-                 [ 0.0630,  0.6904, -0.1516],
-                 [ 0.0835, -0.1516,  0.5953]],
+        tensor([[[ 0.3107,  0.1198,  0.0819],
+                 [ 0.1198,  0.7127,  0.0915],
+                 [ 0.0819,  0.0915,  0.5802]],
         <BLANKLINE>
-                [[ 0.7379, -0.0859,  0.1154],
-                 [-0.0859,  0.3014,  0.0494],
-                 [ 0.1154,  0.0494,  0.5643]]])
+                [[ 0.4100, -0.2117, -0.0450],
+                 [-0.2117,  0.5880,  0.1135],
+                 [-0.0450,  0.1135,  0.6057]]])
     """
     if qp_unif_gen is None: qp_unif_gen = qp.IIDStdUniform
     if delta is None: 
@@ -48,14 +48,14 @@ def rand_flag_real(N, n, delta=None, seed=None, rand_coe=None, qp_unif_gen=None,
         delta = delta/torch.linalg.norm(delta)
     assert delta.shape==(n,)
     assert not delta.is_complex()
-    if rand_coe is None: rand_coe = rand_coe_eig
-    assert rand_coe in [rand_coe_qr,rand_coe_eig]
+    if rand_coe is None: rand_coe = rand_On_QR
+    assert rand_coe in [rand_On_QR,rand_On_eig]
     assert not torch.is_complex(delta)
     q = rand_coe(N=N,n=delta.size(-1),seed=seed,device=delta.device,qp_unif_gen=qp_unif_gen)
     x = torch.einsum("...ij,...j,...kj->...ik",q,delta.to(q.dtype),q)
     return x
 
-def rand_flag_complex(N, n, delta=None, seed=None, rand_cue=None, qp_unif_gen=None, device=None):
+def rand_flag_C(N, n, delta=None, seed=None, rand_cue=None, qp_unif_gen=None, device=None):
     r"""
     Generate a batch of `N` random complex flag matrices of size `(N, n, n)`.
     
@@ -74,17 +74,17 @@ def rand_flag_complex(N, n, delta=None, seed=None, rand_cue=None, qp_unif_gen=No
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
 
-        >>> x = rand_flag_complex(2,3,seed=7)
+        >>> x = rand_flag_C(2,3,seed=7)
         >>> x.shape 
         torch.Size([2, 3, 3])
         >>> x
-        tensor([[[ 0.3538-3.3957e-18j,  0.0460-3.7808e-02j,  0.0604+1.2777e-01j],
-                 [ 0.0460+3.7808e-02j,  0.6703-1.2031e-17j, -0.1432-2.8555e-02j],
-                 [ 0.0604-1.2777e-01j, -0.1432+2.8555e-02j,  0.5795+1.0825e-17j]],
+        tensor([[[ 0.5330-2.6890e-17j,  0.0552+1.6613e-01j, -0.1884-6.8538e-02j],
+                 [ 0.0552-1.6613e-01j,  0.5332+1.8188e-18j,  0.0186+1.5354e-02j],
+                 [-0.1884+6.8538e-02j,  0.0186-1.5354e-02j,  0.5374+1.4321e-17j]],
         <BLANKLINE>
-                [[ 0.6892+2.2244e-17j,  0.0162-4.9683e-02j, -0.1092-8.3062e-02j],
-                 [ 0.0162+4.9683e-02j,  0.3004-7.6753e-18j,  0.0758+3.9791e-02j],
-                 [-0.1092+8.3062e-02j,  0.0758-3.9791e-02j,  0.6140+7.8776e-20j]]])
+                [[ 0.4512+1.7336e-17j, -0.1101+1.5204e-02j,  0.1480-1.7041e-01j],
+                 [-0.1101-1.5204e-02j,  0.5788-7.8507e-18j, -0.0483+2.4620e-02j],
+                 [ 0.1480+1.7041e-01j, -0.0483-2.4620e-02j,  0.5736-3.6136e-18j]]])
     """
     if qp_unif_gen is None: qp_unif_gen = qp.IIDStdUniform
     if delta is None: 
@@ -92,14 +92,14 @@ def rand_flag_complex(N, n, delta=None, seed=None, rand_cue=None, qp_unif_gen=No
         delta = delta/torch.linalg.norm(delta)
     assert delta.shape==(n,)
     assert not delta.is_complex()
-    if rand_cue is None: rand_cue = rand_cue_eig
-    assert rand_cue in [rand_cue_qr,rand_cue_eig]
+    if rand_cue is None: rand_cue = rand_Un_QR
+    assert rand_cue in [rand_Un_QR,rand_Un_eig]
     assert not torch.is_complex(delta)
     q = rand_cue(N=N,n=delta.size(-1),seed=seed,device=delta.device,qp_unif_gen=qp_unif_gen)
     x = torch.einsum("...ij,...j,...kj->...ik",q,delta.to(q.dtype),q.conj())
     return x
 
-def rand_flag_quaternionic(N, n, delta=None, seed=None, rand_cqe=None, qp_unif_gen=None, device=None):
+def rand_flag_H(N, n, delta=None, seed=None, rand_cqe=None, qp_unif_gen=None, device=None):
     r"""
     Generate a batch of `N` random quaternionic flag matrices of size `(N, 2n, 2n)`.
     
@@ -118,7 +118,7 @@ def rand_flag_quaternionic(N, n, delta=None, seed=None, rand_cqe=None, qp_unif_g
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
 
-        >>> x = rand_flag_quaternionic(2,3,seed=7)
+        >>> x = rand_flag_H(2,3,seed=7)
         >>> x.shape 
         torch.Size([2, 6, 6])
         >>> torch.complex(x.real.round(decimals=4)+0.,x.imag.round(decimals=4)+0.)
@@ -154,8 +154,8 @@ def rand_flag_quaternionic(N, n, delta=None, seed=None, rand_cqe=None, qp_unif_g
         delta = delta/torch.linalg.norm(delta)
     assert delta.shape==(n,)
     assert not delta.is_complex()
-    if rand_cqe is None: rand_cqe = rand_cqe_svd
-    assert rand_cqe in [rand_cqe_svd]
+    if rand_cqe is None: rand_cqe = rand_Spn_SVD
+    assert rand_cqe in [rand_Spn_SVD]
     assert not torch.is_complex(delta)
     q = rand_cqe(N=N,n=n,seed=seed,device=delta.device,qp_unif_gen=qp_unif_gen)
     I_nn = torch.diag(torch.cat([torch.ones(n,device=delta.device),-torch.ones(n,device=delta.device)])).to(q.dtype)
@@ -165,7 +165,7 @@ def rand_flag_quaternionic(N, n, delta=None, seed=None, rand_cqe=None, qp_unif_g
     x = torch.einsum("...ij,...j,...jk->...ik",q,lam_paired.to(q.dtype),q_left_corner)
     return x
 
-def rand_lgr_real(N, n, seed=None, rand_cue=None, qp_unif_gen=None, device=None):
+def rand_LGr_R(N, n, seed=None, rand_cue=None, qp_unif_gen=None, device=None):
     r"""
     Generate a batch of `N` random real Lagrangian Grassmannian matrices of size `(N, n, n)`.
     
@@ -183,26 +183,26 @@ def rand_lgr_real(N, n, seed=None, rand_cue=None, qp_unif_gen=None, device=None)
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
 
-        >>> x = rand_lgr_real(2,3,seed=7)
+        >>> x = rand_LGr_R(2,3,seed=7)
         >>> x.shape 
         torch.Size([2, 3, 3])
         >>> x
-        tensor([[[ 0.3178+0.6180j, -0.2441+0.0138j, -0.4326+0.5198j],
-                 [-0.2441+0.0138j,  0.8313+0.2826j, -0.1686+0.3754j],
-                 [-0.4326+0.5198j, -0.1686+0.3754j,  0.6077+0.0631j]],
+        tensor([[[ 0.5347-0.6183j, -0.4216+0.1853j,  0.3367+0.0794j],
+                 [-0.4216+0.1853j, -0.7076-0.3250j,  0.3573-0.2321j],
+                 [ 0.3367+0.0794j,  0.3573-0.2321j,  0.3638-0.7526j]],
         <BLANKLINE>
-                [[ 0.1087+0.2529j, -0.0766-0.3726j, -0.7681-0.4353j],
-                 [-0.0766-0.3726j, -0.6980+0.4304j, -0.0309-0.4265j],
-                 [-0.7681-0.4353j, -0.0309-0.4265j, -0.1256+0.1476j]]])
+                [[ 0.1151+0.8999j, -0.0811+0.0124j,  0.3417+0.2311j],
+                 [-0.0811+0.0124j,  0.1517+0.9848j, -0.0134+0.0125j],
+                 [ 0.3417+0.2311j, -0.0134+0.0125j, -0.8817+0.2282j]]])
     """
     if qp_unif_gen is None: qp_unif_gen = qp.IIDStdUniform
-    if rand_cue is None: rand_cue = rand_cue_eig
-    assert rand_cue in [rand_cue_qr,rand_cue_eig]
+    if rand_cue is None: rand_cue = rand_Un_QR
+    assert rand_cue in [rand_Un_QR,rand_Un_eig]
     q = rand_cue(N=N,n=n,seed=seed,device=device,qp_unif_gen=qp_unif_gen)
     x = torch.einsum("...ij,...kj->...ik",q,q)
     return x
 
-def rand_lgr_complex(N, n, seed=None, rand_cqe=None, qp_unif_gen=None, device=None):
+def rand_LGr_C(N, n, seed=None, rand_cqe=None, qp_unif_gen=None, device=None):
     r"""
     Generate a batch of `N` random complex Lagrangian Grassmannian matrices of size `(N, 2n, 2n)`.
     
@@ -220,7 +220,7 @@ def rand_lgr_complex(N, n, seed=None, rand_cqe=None, qp_unif_gen=None, device=No
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
 
-        >>> x = rand_lgr_complex(2,3,seed=7)
+        >>> x = rand_LGr_C(2,3,seed=7)
         >>> x.shape 
         torch.Size([2, 6, 6])
         >>> torch.complex(x.real.round(decimals=4)+0.,x.imag.round(decimals=4)+0.)
@@ -251,8 +251,8 @@ def rand_lgr_complex(N, n, seed=None, rand_cqe=None, qp_unif_gen=None, device=No
                    0.0949-0.2171j,  0.0069+0.0000j]]])
     """
     if qp_unif_gen is None: qp_unif_gen = qp.IIDStdUniform
-    if rand_cqe is None: rand_cqe = rand_cqe_svd
-    assert rand_cqe in [rand_cqe_svd]
+    if rand_cqe is None: rand_cqe = rand_Spn_SVD
+    assert rand_cqe in [rand_Spn_SVD]
     q = rand_cqe(N=N,n=n,seed=seed,device=device,qp_unif_gen=qp_unif_gen)
     I_nn = torch.diag(torch.cat([
         torch.ones(n, device=device), 
@@ -262,7 +262,7 @@ def rand_lgr_complex(N, n, seed=None, rand_cqe=None, qp_unif_gen=None, device=No
     x = torch.einsum("...ij,...jk->...ik",q,q_left_corner)
     return x
 
-def rand_lgr_quaternionic(N, n, seed=None, rand_cue=None, qp_unif_gen=None, device=None):
+def rand_LGr_H(N, n, seed=None, rand_cue=None, qp_unif_gen=None, device=None):
     r"""
     Generate a batch of `N` random quaternionic Lagrangian Grassmannian matrices of size `(N, 2n, 2n)`.
     
@@ -280,39 +280,39 @@ def rand_lgr_quaternionic(N, n, seed=None, rand_cue=None, qp_unif_gen=None, devi
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
 
-        >>> x = rand_lgr_quaternionic(2,3,seed=7)
+        >>> x = rand_LGr_H(2,3,seed=7)
         >>> x.shape 
         torch.Size([2, 6, 6])
         >>> torch.complex(x.real.round(decimals=4)+0.,x.imag.round(decimals=4)+0.)
-        tensor([[[-0.0078-0.2145j, -0.1052+0.1555j, -0.3302+0.4815j,  0.0000+0.0000j,
-                  -0.4079+0.1238j, -0.6273+0.0499j],
-                 [ 0.3170-0.3322j,  0.3424+0.4642j, -0.0552+0.2809j,  0.4079-0.1238j,
-                   0.0000+0.0000j,  0.3971-0.1873j],
-                 [ 0.2119+0.3043j,  0.0318-0.5068j,  0.1257+0.0113j,  0.6273-0.0499j,
-                  -0.3971+0.1873j,  0.0000+0.0000j],
-                 [ 0.0000+0.0000j,  0.0300-0.4565j, -0.4383+0.4519j, -0.0078-0.2145j,
-                   0.3170-0.3322j,  0.2119+0.3043j],
-                 [-0.0300+0.4565j,  0.0000+0.0000j, -0.1126+0.3902j, -0.1052+0.1555j,
-                   0.3424+0.4642j,  0.0318-0.5068j],
-                 [ 0.4383-0.4519j,  0.1126-0.3902j,  0.0000+0.0000j, -0.3302+0.4815j,
-                  -0.0552+0.2809j,  0.1257+0.0113j]],
+        tensor([[[ 0.2525+0.4835j,  0.3498+0.2373j,  0.0075+0.2605j,  0.0000+0.0000j,
+                  -0.0722+0.0447j, -0.0564+0.6675j],
+                 [-0.1068+0.5171j, -0.1195+0.0116j,  0.6605+0.3107j,  0.0722-0.0447j,
+                   0.0000+0.0000j,  0.1007-0.3958j],
+                 [-0.0877-0.3649j,  0.1217+0.4282j,  0.1840+0.1076j,  0.0564-0.6675j,
+                  -0.1007+0.3958j,  0.0000+0.0000j],
+                 [ 0.0000+0.0000j,  0.5042+0.1211j, -0.1175+0.0137j,  0.2525+0.4835j,
+                  -0.1068+0.5171j, -0.0877-0.3649j],
+                 [-0.5042-0.1211j,  0.0000+0.0000j,  0.4195-0.4047j,  0.3498+0.2373j,
+                  -0.1195+0.0116j,  0.1217+0.4282j],
+                 [ 0.1175-0.0137j, -0.4195+0.4047j,  0.0000+0.0000j,  0.0075+0.2605j,
+                   0.6605+0.3107j,  0.1840+0.1076j]],
         <BLANKLINE>
-                [[-0.5342+0.4689j, -0.0446+0.2017j, -0.4843+0.1871j,  0.0000+0.0000j,
-                   0.3491-0.1905j,  0.0442+0.1498j],
-                 [ 0.1458+0.2085j,  0.3481-0.4403j, -0.4243-0.2789j, -0.3491+0.1905j,
-                   0.0000+0.0000j, -0.2218-0.3938j],
-                 [-0.3098+0.2706j,  0.0235-0.5785j,  0.4580+0.2391j, -0.0442-0.1498j,
-                   0.2218+0.3938j,  0.0000+0.0000j],
-                 [ 0.0000+0.0000j,  0.1981+0.3767j,  0.2599+0.1106j, -0.5342+0.4689j,
-                   0.1458+0.2085j, -0.3098+0.2706j],
-                 [-0.1981-0.3767j,  0.0000+0.0000j,  0.2113+0.2851j, -0.0446+0.2017j,
-                   0.3481-0.4403j,  0.0235-0.5785j],
-                 [-0.2599-0.1106j, -0.2113-0.2851j,  0.0000+0.0000j, -0.4843+0.1871j,
-                  -0.4243-0.2789j,  0.4580+0.2391j]]])
+                [[ 0.0364+0.3162j, -0.0919+0.2657j, -0.3184+0.4507j,  0.0000+0.0000j,
+                  -0.0340-0.2485j, -0.1330+0.6592j],
+                 [-0.2394+0.0866j,  0.0133-0.2684j, -0.6471+0.0804j,  0.0340+0.2485j,
+                   0.0000+0.0000j,  0.5890-0.1670j],
+                 [ 0.0843-0.2270j, -0.1381-0.0200j, -0.3063-0.0327j,  0.1330-0.6592j,
+                  -0.5890+0.1670j,  0.0000+0.0000j],
+                 [ 0.0000+0.0000j, -0.1605+0.8300j, -0.1159-0.2173j,  0.0364+0.3162j,
+                  -0.2394+0.0866j,  0.0843-0.2270j],
+                 [ 0.1605-0.8300j,  0.0000+0.0000j, -0.1564+0.3004j, -0.0919+0.2657j,
+                   0.0133-0.2684j, -0.1381-0.0200j],
+                 [ 0.1159+0.2173j,  0.1564-0.3004j,  0.0000+0.0000j, -0.3184+0.4507j,
+                  -0.6471+0.0804j, -0.3063-0.0327j]]])
     """
     if qp_unif_gen is None: qp_unif_gen = qp.IIDStdUniform
-    if rand_cue is None: rand_cue = rand_cue_eig
-    assert rand_cue in [rand_cue_qr,rand_cue_eig]
+    if rand_cue is None: rand_cue = rand_Un_QR
+    assert rand_cue in [rand_Un_QR,rand_Un_eig]
     q = rand_cue(N=N,n=2*n,seed=seed,device=device,qp_unif_gen=qp_unif_gen)
     I_N = torch.eye(n,device=device,dtype=q.dtype)
     O_N = torch.zeros(n,n,device=device,dtype=q.dtype)
@@ -323,7 +323,7 @@ def rand_lgr_quaternionic(N, n, seed=None, rand_cue=None, qp_unif_gen=None, devi
     x = torch.einsum("...ij,...jk->...ik",q,q_S)
     return x
 
-def rand_stiefel_real(N, n, k=1, seed=None, rand_coe=None, qp_unif_gen=None, device=None):
+def rand_Stiefel_R(N, n, k=1, seed=None, rand_coe=None, qp_unif_gen=None, device=None):
     r"""
     Generate a batch of `N` random real Stiefel matrices of size `(N, n, k)`.
     
@@ -342,28 +342,28 @@ def rand_stiefel_real(N, n, k=1, seed=None, rand_coe=None, qp_unif_gen=None, dev
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
 
-        >>> x = rand_stiefel_real(2,4,3,seed=7)
+        >>> x = rand_Stiefel_R(2,4,3,seed=7)
         >>> x.shape 
         torch.Size([2, 4, 3])
         >>> x
-        tensor([[[-0.1176,  0.6180,  0.0477],
-                 [-0.9874,  0.0093,  0.0088],
-                 [-0.0780, -0.6628,  0.5684],
-                 [-0.0713, -0.4227, -0.8213]],
+        tensor([[[-0.8103, -0.3240, -0.2849],
+                 [ 0.2444, -0.5330,  0.6263],
+                 [ 0.1163, -0.7775, -0.2398],
+                 [-0.5198,  0.0805,  0.6849]],
         <BLANKLINE>
-                [[ 0.4306,  0.6373,  0.6389],
-                 [ 0.1513,  0.4616, -0.5819],
-                 [-0.0197,  0.4892, -0.4525],
-                 [-0.8896,  0.3762,  0.2202]]])
+                [[-0.6600,  0.6605,  0.3158],
+                 [ 0.3410,  0.5402, -0.6430],
+                 [ 0.0840,  0.4057, -0.1982],
+                 [ 0.6642,  0.3277,  0.6690]]])
     """
     if qp_unif_gen is None: qp_unif_gen = qp.IIDStdUniform
-    if rand_coe is None: rand_coe = rand_coe_eig
-    assert rand_coe in [rand_coe_qr,rand_coe_eig]
+    if rand_coe is None: rand_coe = rand_On_QR
+    assert rand_coe in [rand_On_QR,rand_On_eig]
     assert 1<=k<=n
     x = rand_coe(N=N,n=n,seed=seed,device=device,qp_unif_gen=qp_unif_gen)[...,:k]
     return x
 
-def rand_stiefel_complex(N, n, k=1, seed=None, rand_cue=None, qp_unif_gen=None, device=None):
+def rand_Stiefel_C(N, n, k=1, seed=None, rand_cue=None, qp_unif_gen=None, device=None):
     r"""
     Generate a batch of `N` random complex Stiefel matrices of size `(N, n, k)`.
     
@@ -382,28 +382,28 @@ def rand_stiefel_complex(N, n, k=1, seed=None, rand_cue=None, qp_unif_gen=None, 
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
 
-        >>> x = rand_stiefel_complex(2,4,3,seed=7)
+        >>> x = rand_Stiefel_C(2,4,3,seed=7)
         >>> x.shape 
         torch.Size([2, 4, 3])
         >>> x
-        tensor([[[ 0.1736-0.4397j,  0.1390-0.1819j,  0.0704+0.2981j],
-                 [-0.5270+0.0571j,  0.0988-0.5270j, -0.4812+0.4144j],
-                 [-0.1272+0.1617j, -0.5136-0.1608j, -0.3481-0.5962j],
-                 [-0.2991+0.6031j,  0.5796+0.1858j,  0.1019-0.1258j]],
+        tensor([[[-0.5791+0.0748j, -0.2694-0.3827j, -0.1688-0.5285j],
+                 [ 0.0832-0.5342j, -0.0508-0.4185j, -0.4533+0.0390j],
+                 [-0.5636+0.1908j,  0.5696+0.1528j,  0.1186+0.0222j],
+                 [ 0.0717+0.0866j, -0.4132-0.2909j,  0.6626+0.1775j]],
         <BLANKLINE>
-                [[ 0.0870-0.3583j,  0.5889+0.1773j, -0.0978-0.6111j],
-                 [-0.0064+0.2081j,  0.3948+0.2854j, -0.0519+0.6386j],
-                 [ 0.0865-0.5659j,  0.3603+0.0144j,  0.0202+0.4266j],
-                 [ 0.6559-0.2505j, -0.2665-0.4282j, -0.1214+0.0970j]]])
+                [[-0.1572-0.5114j, -0.0644-0.0293j,  0.0032+0.0135j],
+                 [-0.2608+0.2782j,  0.3961-0.6225j,  0.3570+0.3802j],
+                 [-0.6609-0.2334j, -0.2368-0.2797j, -0.1690-0.3820j],
+                 [-0.1562-0.2296j, -0.5166+0.2225j,  0.3754+0.6422j]]])
     """
     if qp_unif_gen is None: qp_unif_gen = qp.IIDStdUniform
-    if rand_cue is None: rand_cue = rand_cue_eig
-    assert rand_cue in [rand_cue_qr,rand_cue_eig]
+    if rand_cue is None: rand_cue = rand_Un_QR
+    assert rand_cue in [rand_Un_QR,rand_Un_eig]
     assert 1<=k<=n
     x = rand_cue(N=N,n=n,seed=seed,device=device,qp_unif_gen=qp_unif_gen)[..., :k]
     return x
 
-def rand_stiefel_quaternionic(N, n, k=1, seed=None, rand_cqe=None, qp_unif_gen=None, device=None):
+def rand_Stiefel_H(N, n, k=1, seed=None, rand_cqe=None, qp_unif_gen=None, device=None):
     r"""
     Generate a batch of `N` random quaternionic Stiefel matrices of size `(N, 2n, 2k)`.
     
@@ -422,7 +422,7 @@ def rand_stiefel_quaternionic(N, n, k=1, seed=None, rand_cqe=None, qp_unif_gen=N
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
 
-        >>> x = rand_stiefel_quaternionic(2,4,3,seed=7)
+        >>> x = rand_Stiefel_H(2,4,3,seed=7)
         >>> x.shape 
         torch.Size([2, 8, 6])
         >>> x
@@ -461,14 +461,14 @@ def rand_stiefel_quaternionic(N, n, k=1, seed=None, rand_cqe=None, qp_unif_gen=N
                    0.1781-0.0226j,  0.4171-0.1087j]]])
     """
     if qp_unif_gen is None: qp_unif_gen = qp.IIDStdUniform
-    if rand_cqe is None: rand_cqe = rand_cqe_svd
-    assert rand_cqe in [rand_cqe_svd]
+    if rand_cqe is None: rand_cqe = rand_Spn_SVD
+    assert rand_cqe in [rand_Spn_SVD]
     assert 1<=k<=n
     q = rand_cqe(N=N,n=n,seed=seed,device=device,qp_unif_gen=qp_unif_gen)
     x = torch.cat([q[..., :k],q[...,n:n+k]],dim=-1)
     return x
 
-def rand_gr_real(N, n, k=1, seed=None, rand_coe=None, qp_unif_gen=None, device=None):
+def rand_Gr_R(N, n, k=1, seed=None, rand_coe=None, qp_unif_gen=None, device=None):
     r"""
     Generate a batch of `N` random real Grassmannian matrices of size `(N, n, n)`.
     
@@ -487,29 +487,29 @@ def rand_gr_real(N, n, k=1, seed=None, rand_coe=None, qp_unif_gen=None, device=N
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
 
-        >>> x = rand_gr_real(2,4,3,seed=7)
+        >>> x = rand_Gr_R(2,4,3,seed=7)
         >>> x.shape 
         torch.Size([2, 4, 4])
         >>> x
-        tensor([[[-0.2041,  0.2445, -0.7467, -0.5840],
-                 [ 0.2445,  0.9504,  0.1516,  0.1186],
-                 [-0.7467,  0.1516,  0.5370, -0.3622],
-                 [-0.5840,  0.1186, -0.3622,  0.7168]],
+        tensor([[[ 0.6854, -0.4075,  0.4519,  0.4000],
+                 [-0.4075,  0.4721,  0.5853,  0.5181],
+                 [ 0.4519,  0.5853,  0.3510, -0.5745],
+                 [ 0.4000,  0.5181, -0.5745,  0.4915]],
         <BLANKLINE>
-                [[ 0.9993, -0.0249,  0.0284, -0.0052],
-                 [-0.0249,  0.1492,  0.9723, -0.1783],
-                 [ 0.0284,  0.9723, -0.1111,  0.2037],
-                 [-0.0052, -0.1783,  0.2037,  0.9627]]])
+                [[ 0.9430, -0.1426,  0.2999, -0.0213],
+                 [-0.1426,  0.6432,  0.7504, -0.0533],
+                 [ 0.2999,  0.7504, -0.5782,  0.1122],
+                 [-0.0213, -0.0533,  0.1122,  0.9920]]])
     """
     if qp_unif_gen is None: qp_unif_gen = qp.IIDStdUniform
-    if rand_coe is None: rand_coe = rand_coe_eig
-    assert rand_coe in [rand_coe_qr,rand_coe_eig]
+    if rand_coe is None: rand_coe = rand_On_QR
+    assert rand_coe in [rand_On_QR,rand_On_eig]
     assert 1<=k<=n
     delta = torch.cat([torch.ones(k,device=device),-torch.ones(n-k,device=device)])
-    x = rand_flag_real(N=N,n=n,delta=delta,seed=seed,rand_coe=rand_coe,qp_unif_gen=qp_unif_gen)
+    x = rand_flag_R(N=N,n=n,delta=delta,seed=seed,rand_coe=rand_coe,qp_unif_gen=qp_unif_gen)
     return x
 
-def rand_gr_complex(N, n, k=1, seed=None, rand_cue=None, qp_unif_gen=None, device=None):
+def rand_Gr_C(N, n, k=1, seed=None, rand_cue=None, qp_unif_gen=None, device=None):
     r"""
     Generate a batch of `N` random complex Grassmannian matrices of size `(N, n, n)`.
     
@@ -528,37 +528,37 @@ def rand_gr_complex(N, n, k=1, seed=None, rand_cue=None, qp_unif_gen=None, devic
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
 
-        >>> x = rand_gr_complex(2,4,3,seed=7)
+        >>> x = rand_Gr_C(2,4,3,seed=7)
         >>> x.shape 
         torch.Size([2, 4, 4])
         >>> x
-        tensor([[[-0.2607-1.8716e-18j,  0.1653+2.0901e-01j, -0.6750+1.6372e-01j,
-                  -0.6013-1.3045e-01j],
-                 [ 0.1653-2.0901e-01j,  0.9437-1.2204e-17j,  0.0614-1.3338e-01j,
-                   0.1005-8.2584e-02j],
-                 [-0.6750-1.6372e-01j,  0.0614+1.3338e-01j,  0.6173-1.3142e-17j,
-                  -0.3050-1.4794e-01j],
-                 [-0.6013+1.3045e-01j,  0.1005+8.2584e-02j, -0.3050+1.4794e-01j,
-                   0.6997-5.7473e-18j]],
+        tensor([[[ 0.7358+2.8368e-18j,  0.2834-3.0054e-01j,  0.1940-3.3491e-01j,
+                  -0.0361-3.6989e-01j],
+                 [ 0.2834+3.0054e-01j,  0.3541-5.3636e-18j, -0.5891+1.3857e-01j,
+                  -0.3821+4.3791e-01j],
+                 [ 0.1940+3.3491e-01j, -0.5891-1.3857e-01j,  0.4329+5.9115e-18j,
+                  -0.4424+3.1745e-01j],
+                 [-0.0361+3.6989e-01j, -0.3821-4.3791e-01j, -0.4424-3.1745e-01j,
+                   0.4771+1.3055e-17j]],
         <BLANKLINE>
-                [[ 0.7944+9.7022e-19j, -0.3542-3.9320e-02j,  0.3247+2.0615e-01j,
-                  -0.2669+1.5072e-01j],
-                 [-0.3542+3.9320e-02j,  0.3822-7.5994e-18j,  0.5989+2.9306e-01j,
-                  -0.4311+3.1070e-01j],
-                 [ 0.3247-2.0615e-01j,  0.5989-2.9306e-01j,  0.2804-2.9655e-18j,
-                   0.2705-5.0568e-01j],
-                 [-0.2669-1.5072e-01j, -0.4311-3.1070e-01j,  0.2705+5.0568e-01j,
-                   0.5430-1.0418e-17j]]])
+                [[-0.4170-9.4448e-18j, -0.2046+2.5806e-01j,  0.4820+5.7829e-01j,
+                   0.3572+1.5258e-01j],
+                 [-0.2046-2.5806e-01j,  0.9235-4.2559e-18j, -0.0357+1.7128e-01j,
+                   0.0238+8.7094e-02j],
+                 [ 0.4820-5.7829e-01j, -0.0357-1.7128e-01j,  0.6001+9.9685e-19j,
+                  -0.1838+9.3896e-02j],
+                 [ 0.3572-1.5258e-01j,  0.0238-8.7094e-02j, -0.1838-9.3896e-02j,
+                   0.8935+8.6315e-18j]]])
     """
     if qp_unif_gen is None: qp_unif_gen = qp.IIDStdUniform
-    if rand_cue is None: rand_cue = rand_cue_eig
-    assert rand_cue in [rand_cue_qr,rand_cue_eig]
+    if rand_cue is None: rand_cue = rand_Un_QR
+    assert rand_cue in [rand_Un_QR,rand_Un_eig]
     assert 1<=k<=n
     delta = torch.cat([torch.ones(k,device=device),-torch.ones(n-k,device=device)])
-    x = rand_flag_complex(N=N,n=n,delta=delta,seed=seed,rand_cue=rand_cue,qp_unif_gen=qp_unif_gen)
+    x = rand_flag_C(N=N,n=n,delta=delta,seed=seed,rand_cue=rand_cue,qp_unif_gen=qp_unif_gen)
     return x
 
-def rand_gr_quaternionic(N, n, k=1, seed=None, rand_cqe=None, qp_unif_gen=None, device=None):
+def rand_Gr_H(N, n, k=1, seed=None, rand_cqe=None, qp_unif_gen=None, device=None):
     r"""
     Generate a batch of `N` random quaternionic Grassmannian matrices of size `(N, 2n, 2n)`.
     
@@ -577,7 +577,7 @@ def rand_gr_quaternionic(N, n, k=1, seed=None, rand_cqe=None, qp_unif_gen=None, 
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
 
-        >>> x = rand_gr_quaternionic(2,4,3,seed=7)
+        >>> x = rand_Gr_H(2,4,3,seed=7)
         >>> x.shape 
         torch.Size([2, 8, 8])
         >>> x
@@ -616,9 +616,9 @@ def rand_gr_quaternionic(N, n, k=1, seed=None, rand_cqe=None, qp_unif_gen=None, 
                    0.2940+0.0937j, -0.1133-0.2403j,  0.3229+0.4110j, -0.3198+0.0000j]]])
     """
     if qp_unif_gen is None: qp_unif_gen = qp.IIDStdUniform
-    if rand_cqe is None: rand_cqe = rand_cqe_svd
-    assert rand_cqe in [rand_cqe_svd]
+    if rand_cqe is None: rand_cqe = rand_Spn_SVD
+    assert rand_cqe in [rand_Spn_SVD]
     assert 1<=k<=n
     delta = torch.cat([torch.ones(k,device=device),-torch.ones(n-k,device=device)])
-    x = rand_flag_quaternionic(N=N,n=n,delta=delta,seed=seed,rand_cqe=rand_cqe,qp_unif_gen=qp_unif_gen)
+    x = rand_flag_H(N=N,n=n,delta=delta,seed=seed,rand_cqe=rand_cqe,qp_unif_gen=qp_unif_gen)
     return x

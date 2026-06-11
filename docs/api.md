@@ -14,12 +14,12 @@
 
 ## Random Stiefel, Grassmann, flag, and Lagrangian Grassmann matrices
 
-::: rmatqmcpy.rand_stiefel_gr_flag_lgr
+::: rmatqmcpy.rand_Stiefel_Gr_flag_LGr
 
 ## Random COE, CUE, and CQE matrices
 
-::: rmatqmcpy.rand_coe_cue_cqe
+::: rmatqmcpy.rand_On_Un_SPn
 
 ## Transforms from uniforms to COE, CUE, and CQE matrices
 
-::: rmatqmcpy.tf_coe_cue_cqe
+::: rmatqmcpy.tf_On_Un_SPn

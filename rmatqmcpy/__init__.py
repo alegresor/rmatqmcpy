@@ -1,34 +1,34 @@
 __version__ = "0.1"
 
-from .tf_coe_cue_cqe import (
-    tf_coe_qr,
-    tf_cue_qr,
-    tf_coe_eig,
-    tf_cue_eig,
-    tf_cqe_svd,
+from .tf_On_Un_SPn import (
+    tf_On_QR,
+    tf_Un_QR,
+    tf_On_eig,
+    tf_Un_eig,
+    tf_Spn_SVD,
 )
 
-from .rand_coe_cue_cqe import (
-    rand_coe_qr,
-    rand_cue_qr,
-    rand_coe_eig,
-    rand_cue_eig,
-    rand_cqe_svd,
+from .rand_On_Un_SPn import (
+    rand_On_QR,
+    rand_Un_QR,
+    rand_On_eig,
+    rand_Un_eig,
+    rand_Spn_SVD,
 )
 
-from .rand_stiefel_gr_flag_lgr import (
-    rand_flag_real,
-    rand_flag_complex,
-    rand_flag_quaternionic,
-    rand_lgr_real,
-    rand_lgr_complex,
-    rand_lgr_quaternionic,
-    rand_stiefel_real,
-    rand_stiefel_complex,
-    rand_stiefel_quaternionic,
-    rand_gr_real,
-    rand_gr_complex,
-    rand_gr_quaternionic,
+from .rand_Stiefel_Gr_flag_LGr import (
+    rand_flag_R,
+    rand_flag_C,
+    rand_flag_H,
+    rand_LGr_R,
+    rand_LGr_C,
+    rand_LGr_H,
+    rand_Stiefel_R,
+    rand_Stiefel_C,
+    rand_Stiefel_H,
+    rand_Gr_R,
+    rand_Gr_C,
+    rand_Gr_H,
 )
 
 from .kernels import (
