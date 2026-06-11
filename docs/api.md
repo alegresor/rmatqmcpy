@@ -1,13 +1,21 @@
 # API
 
+??? note "Table of Contents"
+
+    [TOC]
+    
 ## Kernels
-
-::: rmatqmcpy.rand
-
-## Random matrices
 
 ::: rmatqmcpy.kernels
 
-## Low level transforms 
+## Random Stiefel, Grassmann, flag, and Lagrangian Grassmann matrices
 
-::: rmatqmcpy.transforms
+::: rmatqmcpy.rand_stiefel_gr_flag_lgr
+
+## Random COE, CUE, and CQE matrices
+
+::: rmatqmcpy.rand_coe_cue_cqe
+
+## Transforms from uniforms to COE, CUE, and CQE matrices
+
+::: rmatqmcpy.tf_coe_cue_cqe
