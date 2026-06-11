@@ -19,11 +19,9 @@ class KernelPoly(object):
    Examples:
         >>> torch.set_default_dtype(torch.float64) 
 
-        >>> delta = torch.arange(1,8,dtype=float)
-        >>> delta = delta/torch.linalg.norm(delta)
         >>> kernel = KernelPoly()
 
-        >>> x = rand_flag_real(3,delta,seed=7)
+        >>> x = rand_flag_real(3,7,seed=7)
         >>> x.shape 
         torch.Size([3, 7, 7])
         >>> k = kernel(x[:,None,:,:],x[None,:,:,:])
@@ -34,7 +32,7 @@ class KernelPoly(object):
                 [3.3004, 4.0000, 3.4239],
                 [3.2718, 3.4239, 4.0000]])
         
-        >>> x = rand_flag_complex(3,delta,seed=7)
+        >>> x = rand_flag_complex(3,7,seed=7)
         >>> x.shape 
         torch.Size([3, 7, 7])
         >>> k = kernel(x[:,None,:,:],x[None,:,:,:])
@@ -45,7 +43,7 @@ class KernelPoly(object):
                 [3.2018, 4.0000, 3.3987],
                 [3.1857, 3.3987, 4.0000]])
         
-        >>> x = rand_flag_quaternionic(3,delta,seed=7)
+        >>> x = rand_flag_quaternionic(3,7,seed=7)
         >>> x.shape 
         torch.Size([3, 14, 14])
         >>> k = kernel(x[:,None,:,:],x[None,:,:,:])
@@ -79,11 +77,9 @@ class KernelMatern(object):
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
 
-        >>> delta = torch.arange(1,8,dtype=float)
-        >>> delta = delta/torch.linalg.norm(delta)
         >>> kernel = KernelMatern(nu=1/2)
 
-        >>> x = rand_flag_real(3,delta,seed=7)
+        >>> x = rand_flag_real(3,7,seed=7)
         >>> x.shape 
         torch.Size([3, 7, 7])
         >>> k = kernel(x[:,None,:,:],x[None,:,:,:])
@@ -100,7 +96,7 @@ class KernelMatern(object):
         ...     assert not k.isnan().any()
         ...     assert k.isfinite().all()
         
-        >>> x = rand_flag_complex(3,delta,seed=7)
+        >>> x = rand_flag_complex(3,7,seed=7)
         >>> x.shape 
         torch.Size([3, 7, 7])
         >>> k = kernel(x[:,None,:,:],x[None,:,:,:])
@@ -117,7 +113,7 @@ class KernelMatern(object):
         ...     assert not k.isnan().any()
         ...     assert k.isfinite().all()
 
-        >>> x = rand_flag_quaternionic(3,delta,seed=7)
+        >>> x = rand_flag_quaternionic(3,7,seed=7)
         >>> x.shape 
         torch.Size([3, 14, 14])
         >>> k = kernel(x[:,None,:,:],x[None,:,:,:])

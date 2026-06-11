@@ -11,7 +11,7 @@ from .tf_coe_cue_cqe import (
     tf_cqe_svd,
 )
 
-def rand_coe_qr(N, n, seed=None, device="cpu", qp_unif_gen=qp.IIDStdUniform):
+def rand_coe_qr(N, n, seed=None, device=None, qp_unif_gen=qp.IIDStdUniform):
     r"""
     Generate a batch of `N` random orthogonal matrices of size `(N, n, n)` using the QR decomposition. 
     
@@ -58,7 +58,7 @@ def rand_coe_qr(N, n, seed=None, device="cpu", qp_unif_gen=qp.IIDStdUniform):
     q = tf_coe_qr(u)
     return q
 
-def rand_cue_qr(N, n, seed=None, device="cpu", qp_unif_gen=qp.IIDStdUniform):
+def rand_cue_qr(N, n, seed=None, device=None, qp_unif_gen=qp.IIDStdUniform):
     r"""
     Generate a batch of `N` random unitary matrices of size `(N, n, n)` using the QR decomposition. 
     
@@ -104,7 +104,7 @@ def rand_cue_qr(N, n, seed=None, device="cpu", qp_unif_gen=qp.IIDStdUniform):
     q = tf_cue_qr(u)
     return q
 
-def rand_coe_eig(N, n, seed=None, device="cpu", qp_unif_gen=qp.IIDStdUniform):
+def rand_coe_eig(N, n, seed=None, device=None, qp_unif_gen=qp.IIDStdUniform):
     r"""
     Generate a batch of `N` random orthogonal matrices of size `(N, n, n)` using the eigenvalue decomposition.
     
@@ -149,7 +149,7 @@ def rand_coe_eig(N, n, seed=None, device="cpu", qp_unif_gen=qp.IIDStdUniform):
     q = tf_coe_eig(u)
     return q
 
-def rand_cue_eig(N, n, seed=None, device="cpu", qp_unif_gen=qp.IIDStdUniform):
+def rand_cue_eig(N, n, seed=None, device=None, qp_unif_gen=qp.IIDStdUniform):
     r"""
     Generate a batch of `N` random unitary matrices of size `(N, n, n)` using the eigenvalue decomposition.
     
@@ -194,7 +194,7 @@ def rand_cue_eig(N, n, seed=None, device="cpu", qp_unif_gen=qp.IIDStdUniform):
     q = tf_cue_eig(u)
     return q
 
-def rand_cqe_svd(N, n, seed=None, device="cpu", qp_unif_gen=qp.IIDStdUniform):
+def rand_cqe_svd(N, n, seed=None, device=None, qp_unif_gen=qp.IIDStdUniform):
     r"""
     Generate a batch of `N` random symplectic unitary matrices of size `(N, 2n, 2n)` using the SVD decomposition. 
     
