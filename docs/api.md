@@ -4,13 +4,13 @@
 
     [TOC]
     
+## Optimal weights summing to 1 and WCE
+
+::: rmatqmcpy.opt
+
 ## Matern and polynomial kernels
 
 ::: rmatqmcpy.kernels
-
-## Optimization of weights
-
-::: rmatqmcpy.opt
 
 ## Random Stiefel, Grassmann, flag, and Lagrangian Grassmann matrices
 

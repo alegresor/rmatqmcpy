@@ -38,4 +38,5 @@ from .kernels import (
 
 from .opt import (
     opt_weights_sum_1,
+    wce_squared_plus_kernel_integral,
 )
