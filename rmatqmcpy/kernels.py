@@ -2,7 +2,7 @@ import agsutil
 import torch 
 import numpy as np
 
-from .rand import (
+from .rand_stiefel_gr_flag_lgr import (
     rand_flag_real,
     rand_flag_complex,
     rand_flag_quaternionic,
