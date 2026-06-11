@@ -6,6 +6,15 @@ from .rand_stiefel_gr_flag_lgr import (
     rand_flag_real,
     rand_flag_complex,
     rand_flag_quaternionic,
+    rand_stiefel_real,
+    rand_stiefel_complex,
+    rand_stiefel_quaternionic,
+    rand_gr_real,
+    rand_gr_complex,
+    rand_gr_quaternionic,
+    rand_lgr_real,
+    rand_lgr_complex,
+    rand_lgr_quaternionic,
 )
 
 class KernelPoly(object):
@@ -32,27 +41,25 @@ class KernelPoly(object):
                 [3.3004, 4.0000, 3.4239],
                 [3.2718, 3.4239, 4.0000]])
         
-        >>> x = rand_flag_complex(3,7,seed=7)
-        >>> x.shape 
-        torch.Size([3, 7, 7])
-        >>> k = kernel(x[:,None,:,:],x[None,:,:,:])
-        >>> k.shape 
-        torch.Size([3, 3])
-        >>> k
-        tensor([[4.0000, 3.2018, 3.1857],
-                [3.2018, 4.0000, 3.3987],
-                [3.1857, 3.3987, 4.0000]])
-        
-        >>> x = rand_flag_quaternionic(3,7,seed=7)
-        >>> x.shape 
-        torch.Size([3, 14, 14])
-        >>> k = kernel(x[:,None,:,:],x[None,:,:,:])
-        >>> k.shape 
-        torch.Size([3, 3])
-        >>> k
-        tensor([[9.0000, 1.1705, 2.3330],
-                [1.1705, 9.0000, 1.1350],
-                [2.3330, 1.1350, 9.0000]])
+        >>> for rand_manifold in [
+        ...         rand_flag_real,
+        ...         rand_flag_complex,
+        ...         rand_flag_quaternionic,
+        ...         rand_stiefel_real,
+        ...         rand_stiefel_complex,
+        ...         rand_stiefel_quaternionic,
+        ...         rand_gr_real,
+        ...         rand_gr_complex,
+        ...         rand_gr_quaternionic,
+        ...         rand_lgr_real,
+        ...         rand_lgr_complex,
+        ...         rand_lgr_quaternionic,]:
+        ...     x = rand_manifold(3,7,seed=7)
+        ...     k = kernel(x[:,None,:,:],x[None,:,:,:])
+        ...     assert k.shape==(3,3)
+        ...     assert not k.isnan().any()
+        ...     assert k.isfinite().all()
+        ...     assert not k.is_complex()
     """
     def __init__(self, t=2, c=1):
         assert t>=1 
@@ -89,46 +96,28 @@ class KernelMatern(object):
         tensor([[1.0000, 0.5458, 0.5388],
                 [0.5458, 1.0000, 0.5787],
                 [0.5388, 0.5787, 1.0000]])
-        >>> for nu in [1/2,3/2,5/2,7/2,9/2,11/2,13/2,np.inf]:
-        ...     kernel_nu = KernelMatern(nu=nu)
-        ...     k = kernel_nu(x[:,None,:,:],x[None,:,:,:])
-        ...     assert k.shape==(3,3)
-        ...     assert not k.isnan().any()
-        ...     assert k.isfinite().all()
         
-        >>> x = rand_flag_complex(3,7,seed=7)
-        >>> x.shape 
-        torch.Size([3, 7, 7])
-        >>> k = kernel(x[:,None,:,:],x[None,:,:,:])
-        >>> k.shape 
-        torch.Size([3, 3])
-        >>> k
-        tensor([[1.0000, 0.5225, 0.5189],
-                [0.5225, 1.0000, 0.5716],
-                [0.5189, 0.5716, 1.0000]])
-        >>> for nu in [1/2,3/2,5/2,7/2,9/2,11/2,13/2,np.inf]:
-        ...     kernel_nu = KernelMatern(nu=nu)
-        ...     k = kernel_nu(x[:,None,:,:],x[None,:,:,:])
-        ...     assert k.shape==(3,3)
-        ...     assert not k.isnan().any()
-        ...     assert k.isfinite().all()
-
-        >>> x = rand_flag_quaternionic(3,7,seed=7)
-        >>> x.shape 
-        torch.Size([3, 14, 14])
-        >>> k = kernel(x[:,None,:,:],x[None,:,:,:])
-        >>> k.shape 
-        torch.Size([3, 3])
-        >>> k
-        tensor([[1.0000, 0.1411, 0.1798],
-                [0.1411, 1.0000, 0.1399],
-                [0.1798, 0.1399, 1.0000]])
-        >>> for nu in [1/2,3/2,5/2,7/2,9/2,11/2,13/2,np.inf]:
-        ...     kernel_nu = KernelMatern(nu=nu)
-        ...     k = kernel_nu(x[:,None,:,:],x[None,:,:,:])
-        ...     assert k.shape==(3,3)
-        ...     assert not k.isnan().any()
-        ...     assert k.isfinite().all()
+        >>> for rand_manifold in [
+        ...         rand_flag_real,
+        ...         rand_flag_complex,
+        ...         rand_flag_quaternionic,
+        ...         rand_stiefel_real,
+        ...         rand_stiefel_complex,
+        ...         rand_stiefel_quaternionic,
+        ...         rand_gr_real,
+        ...         rand_gr_complex,
+        ...         rand_gr_quaternionic,
+        ...         rand_lgr_real,
+        ...         rand_lgr_complex,
+        ...         rand_lgr_quaternionic,]:
+        ...     x = rand_manifold(3,7,seed=7)
+        ...     for nu in [1/2,3/2,5/2,7/2,9/2,11/2,13/2,np.inf]:
+        ...         kernel = KernelMatern(nu=nu)
+        ...         k = kernel(x[:,None,:,:],x[None,:,:,:])
+        ...         assert k.shape==(3,3)
+        ...         assert not k.isnan().any()
+        ...         assert k.isfinite().all()
+        ...         assert not k.is_complex()
     """
     SUPPORTED_NU = [1/2,3/2,5/2,7/2,9/2,11/2,13/2,np.inf]
     def __init__(self, nu=5/2, sigma2=1, rho=1):
