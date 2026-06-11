@@ -32,6 +32,10 @@ from .rand_stiefel_gr_flag_lgr import (
 )
 
 from .kernels import (
+    KernelMatern,    
     KernelPoly,
-    KernelMatern,
+)
+
+from .opt import (
+    opt_weights_sum_1,
 )

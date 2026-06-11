@@ -17,61 +17,6 @@ from .rand_stiefel_gr_flag_lgr import (
     rand_lgr_quaternionic,
 )
 
-class KernelPoly(object):
-    r"""
-    Polynomial kernel.
-
-    Args:
-        r (int): Degree of the polynomial.
-        c (float): Constant offset.
-
-   Examples:
-        >>> torch.set_default_dtype(torch.float64) 
-
-        >>> kernel = KernelPoly()
-
-        >>> x = rand_flag_real(3,7,seed=7)
-        >>> x.shape 
-        torch.Size([3, 7, 7])
-        >>> k = kernel(x[:,None,:,:],x[None,:,:,:])
-        >>> k.shape 
-        torch.Size([3, 3])
-        >>> k
-        tensor([[4.0000, 3.3004, 3.2718],
-                [3.3004, 4.0000, 3.4239],
-                [3.2718, 3.4239, 4.0000]])
-        
-        >>> for rand_manifold in [
-        ...         rand_flag_real,
-        ...         rand_flag_complex,
-        ...         rand_flag_quaternionic,
-        ...         rand_stiefel_real,
-        ...         rand_stiefel_complex,
-        ...         rand_stiefel_quaternionic,
-        ...         rand_gr_real,
-        ...         rand_gr_complex,
-        ...         rand_gr_quaternionic,
-        ...         rand_lgr_real,
-        ...         rand_lgr_complex,
-        ...         rand_lgr_quaternionic,]:
-        ...     x = rand_manifold(3,7,seed=7)
-        ...     k = kernel(x[:,None,:,:],x[None,:,:,:])
-        ...     assert k.shape==(3,3)
-        ...     assert not k.isnan().any()
-        ...     assert k.isfinite().all()
-        ...     assert not k.is_complex()
-    """
-    def __init__(self, t=2, c=1):
-        assert t>=1 
-        assert t%1==0
-        assert c>0
-        self.t = t
-        self.c = c
-    def __call__(self, x, y, dim=(-2,-1)):
-        frob_inner_prod = (x*y.conj()).sum(dim=dim).real
-        v = (self.c+frob_inner_prod)**self.t
-        return v
-
 class KernelMatern(object):
     r"""
     Matern chordal kernel.
@@ -170,20 +115,68 @@ class KernelMatern(object):
             k = exp_term*poly_term
         return self.sigma2*k
 
-def opt_weights(x, kernel, eps=1e-12):
+class KernelPoly(object):
     r"""
-    Compute the optimal weights for a kernel quadrature rule.
+    Polynomial kernel.
 
     Args:
-        x (torch.Tensor): A batch of samples of shape `(..., n, n)`.
-        kernel (callable): Kernel function.
-        eps (float, optional): Regularization parameter for numerical stability.
+        r (int): Degree of the polynomial.
+        c (float): Constant offset.
 
-    Returns:
-        w (torch.Tensor): Optimal weights of shape `(N,)`.
+   Examples:
+        >>> torch.set_default_dtype(torch.float64) 
+
+        >>> kernel = KernelPoly()
+
+        >>> x = rand_flag_real(3,7,seed=7)
+        >>> x.shape 
+        torch.Size([3, 7, 7])
+        >>> k = kernel(x[:,None,:,:],x[None,:,:,:])
+        >>> k.shape 
+        torch.Size([3, 3])
+        >>> k
+        tensor([[4.0000, 3.3004, 3.2718],
+                [3.3004, 4.0000, 3.4239],
+                [3.2718, 3.4239, 4.0000]])
+        
+        >>> for rand_manifold in [
+        ...         rand_flag_real,
+        ...         rand_flag_complex,
+        ...         rand_flag_quaternionic,
+        ...         rand_stiefel_real,
+        ...         rand_stiefel_complex,
+        ...         rand_stiefel_quaternionic,
+        ...         rand_gr_real,
+        ...         rand_gr_complex,
+        ...         rand_gr_quaternionic,
+        ...         rand_lgr_real,
+        ...         rand_lgr_complex,
+        ...         rand_lgr_quaternionic,]:
+        ...     x = rand_manifold(3,7,seed=7)
+        ...     k = kernel(x[:,None,:,:],x[None,:,:,:])
+        ...     assert k.shape==(3,3)
+        ...     assert not k.isnan().any()
+        ...     assert k.isfinite().all()
+        ...     assert not k.is_complex()
     """
-    kmat = kernel(x[...,:,None,:,:],x[...,None,:,:,:]) # (...,n,n)
-    b = torch.ones(kmat.size(-1),device=DEVICE) # (...,n,)
-    L = torch.linalg.cholesky(kmat+eps*torch.eye(kmat.size(-1),device=DEVICE),upper=False) # (...,n,n)
-    w = torch.cholesky_solve(b[...,None],L,upper=False)[...,0] # (...,n)
-    return w/w.sum(-1,keepdim=True)
+    def __init__(self, t=2, c=1):
+        assert t>=1 
+        assert t%1==0
+        assert c>0
+        self.t = t
+        self.c = c
+    def __call__(self, x, y, dim=(-2,-1)):
+        r"""
+        Compute the polynomial kernel between two batches of tensors.
+
+        Args:
+            x (torch.Tensor): First batch of tensors.
+            y (torch.Tensor): Second batch of tensors.
+            dim (tuple, optional): Dimensions over which to take the Frobenius inner product.
+
+        Returns:
+            k (torch.Tensor): The computed polynomial kernel values.
+        """
+        frob_inner_prod = (x*y.conj()).sum(dim=dim).real
+        v = (self.c+frob_inner_prod)**self.t
+        return v

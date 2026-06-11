@@ -4,9 +4,13 @@
 
     [TOC]
     
-## Kernels
+## Matern and polynomial kernels
 
 ::: rmatqmcpy.kernels
+
+## Optimization of weights
+
+::: rmatqmcpy.opt
 
 ## Random Stiefel, Grassmann, flag, and Lagrangian Grassmann matrices
 
