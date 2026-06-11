@@ -2,8 +2,8 @@ site_name: "RMatQMCPy"
 nav:
   - Home: index.md
   - Package Reference: api.md
-  - Cubature WCE with Matern Kernels: examples/flag.matern_kernel.ipynb
-  - Intrinsic volumes with flag manifolds: examples/intrinsic_volumes.ipynb
+  - Optimal WCE cubature with Matern kernels: examples/opt_rates.matern.ipynb
+  - Intrinsic volumes using flag manifolds: examples/intrinsic_volumes.ipynb
 
 plugins:
   - search
