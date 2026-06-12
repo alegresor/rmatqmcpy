@@ -22,4 +22,4 @@
 
 ## Transforms from uniforms to COE, CUE, and CQE matrices
 
-::: rmatqmcpy.tf_On_Un_SPn
+::: rmatqmcpy.tf_On_Un_Spn

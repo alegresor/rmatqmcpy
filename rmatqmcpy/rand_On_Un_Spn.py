@@ -3,7 +3,7 @@ import torch
 import numpy as np
 import qmcpy as qp 
 
-from .tf_On_Un_SPn import (
+from .tf_On_Un_Spn import (
     tf_On_QR,
     tf_On_eig,
     tf_Un_QR,

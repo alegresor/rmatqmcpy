@@ -1,6 +1,6 @@
 __version__ = "0.1"
 
-from .tf_On_Un_SPn import (
+from .tf_On_Un_Spn import (
     tf_On_QR,
     tf_Un_QR,
     tf_On_eig,
