@@ -462,7 +462,7 @@ def rand_Stiefel_H(N, n, k=1, seed=None, rand_Spn=None, qp_unif_gen=None, device
     assert rand_Spn in [rand_Spn_SVD]
     assert 1<=k<=n
     q = rand_Spn(N=N,n=n,seed=seed,device=device,qp_unif_gen=qp_unif_gen)
-    x = torch.cat([q[..., :k],q[...,n:n+k]],dim=-1)
+    x = torch.cat([q[...,:k],q[...,n:n+k]],dim=-1)
     return x
 
 def rand_Gr_R(N, n, k=1, seed=None, rand_On=None, qp_unif_gen=None, device=None):
