@@ -18,7 +18,7 @@
 
 ## Random COE, CUE, and CQE matrices
 
-::: rmatqmcpy.rand_On_Un_SPn
+::: rmatqmcpy.rand_On_Un_Spn
 
 ## Transforms from uniforms to COE, CUE, and CQE matrices
 

@@ -3,7 +3,7 @@ import torch
 import numpy as np
 import qmcpy as qp
 
-from .rand_On_Un_SPn import (
+from .rand_On_Un_Spn import (
   rand_On_QR,
   rand_Un_QR,
   rand_On_eig,
