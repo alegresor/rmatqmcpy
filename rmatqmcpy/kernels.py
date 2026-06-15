@@ -111,7 +111,8 @@ class KernelMatern(object):
             k = torch.exp(-(rscaled)**2/2)
         else:
             exp_term = torch.exp(-np.sqrt(2*self.nu)*rscaled) 
-            poly_term = (self.c.to(x.device)*rscaled[...,None]**torch.arange(len(self.c),dtype=x.real.dtype)).sum(-1)
+            powers = torch.arange(len(self.c),dtype=x.real.dtype,device=x.device)
+            poly_term = (self.c.to(x.device)*rscaled[...,None]**powers).sum(-1)
             k = exp_term*poly_term
         return self.sigma2*k
 

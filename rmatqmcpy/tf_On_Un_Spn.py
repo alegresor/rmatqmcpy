@@ -81,7 +81,7 @@ def tf_Un_QR(u):
     v_complex = torch.complex(v[...,0],v[...,1])
     q,r = torch.linalg.qr(v_complex)
     d = torch.diagonal(r,dim1=-2,dim2=-1)
-    ph = d/torch.abs(d)
+    ph = torch.sgn(d)
     q = q*ph[...,None,:]
     # assert torch.allclose(torch.einsum("...ij,...jk->...ik",q,r*ph[..., :, None].conj()),v_complex)
     return q
