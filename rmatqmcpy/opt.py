@@ -1,9 +1,10 @@
 import torch 
+import agsutil
 
 from .kernels import KernelMatern
 from .rand_Stiefel_Gr_flag_LGr import rand_flag_R
 
-def opt_weights_sum_1(x, kernel, dims=2, eps=1e-12, return_wce2_p_kmean=True):
+def opt_weights_sum_1(x, kernel, dims=2, eps=1e-12, return_wce2_p_kmean=True, use_pcg=False, pcg_kwargs={"verbose":False}):
     r"""
     Compute the optimal weights for a kernel quadrature rule.
 
@@ -16,6 +17,9 @@ def opt_weights_sum_1(x, kernel, dims=2, eps=1e-12, return_wce2_p_kmean=True):
             $\mathrm{WCE}^2+\gamma = \boldsymbol{w}^\intercal \mathsf{K} \boldsymbol{w}$ 
             where $\gamma = \int_\mathcal{M} K(\boldsymbol{x},\boldsymbol{y}) \mu(\mathrm{d} \boldsymbol{x})$ 
             is assumed to be constant as a function of $\boldsymbol{x}$. 
+        use_pcg (bool): If True, use preconditioned conjugate gradient (PCG) to solve for weights. 
+            If `use_pcg` an int is passed in, then PCG is used whenever `N>=use_pcg`.
+        pcg_kwargs (dict): keyword arguments to pass to `agsutil.pcg`.
 
     Returns:
         w (torch.Tensor): Optimal weights of shape `(..., N)`.
@@ -53,12 +57,31 @@ def opt_weights_sum_1(x, kernel, dims=2, eps=1e-12, return_wce2_p_kmean=True):
         torch.Size([2])
         >>> wce2_p_kmean_full
         tensor([0.7027, 0.7009])
+
+        >>> w_full_pcg,wce2_p_kmean_full_pcg = opt_weights_sum_1(xfull,kernel,use_pcg=True)
+        >>> torch.allclose(w_full,w_full_pcg)
+        True
+        >>> torch.allclose(wce2_p_kmean_full,wce2_p_kmean_full_pcg)
+        True
     """
     assert x.ndim>=(dims+1)
     kmat = kernel(x.unsqueeze(-dims-1),x.unsqueeze(-dims-2),dim=tuple(j for j in range(-dims,0,1))) # (...,N,N)
+    N = kmat.size(-1)
     b = torch.ones(kmat.shape[:-1],device=x.device) # (...,N)
-    L = torch.linalg.cholesky(kmat+eps*torch.eye(kmat.size(-1),device=x.device),upper=False) # (...,N,N)
-    w = torch.cholesky_solve(b[...,None],L,upper=False)[...,0] # (...,N)
+    if not isinstance(use_pcg,bool):
+        assert isinstance(use_pcg,int) 
+        use_pcg = N>=use_pcg
+    assert isinstance(use_pcg,bool)
+    kmat_noisy = kmat+eps*torch.eye(N,device=x.device)
+    if use_pcg:
+        w = agsutil.pcg(
+            kmat_noisy,
+            b[...,None],
+            **pcg_kwargs,
+        )[...,0]
+    else:
+        L = torch.linalg.cholesky(kmat+eps*torch.eye(N,device=x.device),upper=False) # (...,N,N)
+        w = torch.cholesky_solve(b[...,None],L,upper=False)[...,0] # (...,N)
     w = w/w.sum(-1,keepdim=True)
     if return_wce2_p_kmean:
         wce_squared_plus_kernel_integral = torch.einsum("...i,...ij,...j->...",w,kmat,w) # (...,)
