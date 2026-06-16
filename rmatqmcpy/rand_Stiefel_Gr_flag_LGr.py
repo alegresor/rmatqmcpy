@@ -252,8 +252,8 @@ def rand_LGr_C(N, n, seed=None, rand_Spn=None, qp_unif_gen=None, device=None):
     assert rand_Spn in [rand_Spn_SVD]
     q = rand_Spn(N=N,n=n,seed=seed,device=device,qp_unif_gen=qp_unif_gen)
     I_nn = torch.diag(torch.cat([
-        torch.ones(n, device=device), 
-        -torch.ones(n, device=device)
+        torch.ones(n,device=device), 
+        -torch.ones(n,device=device)
     ])).to(q.dtype)
     q_left_corner = torch.einsum("ij,...kj,kl->...il",I_nn,q.conj(),I_nn)
     x = torch.einsum("...ij,...jk->...ik",q,q_left_corner)
@@ -314,8 +314,8 @@ def rand_LGr_H(N, n, seed=None, rand_Un=None, qp_unif_gen=None, device=None):
     I_N = torch.eye(n,device=device,dtype=q.dtype)
     O_N = torch.zeros(n,n,device=device,dtype=q.dtype)
     J = torch.cat([
-        torch.cat([ O_N,I_N],dim=-1),
-        torch.cat([-I_N,O_N],dim=-1)],dim=-2)
+        torch.cat([O_N,-I_N],dim=-1),
+        torch.cat([I_N, O_N],dim=-1)],dim=-2)
     q_S = -torch.einsum("ij,...kj,kl->...il",J,q,J)
     x = torch.einsum("...ij,...jk->...ik",q,q_S)
     return x
