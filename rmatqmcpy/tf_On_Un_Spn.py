@@ -8,8 +8,8 @@ def tf_On_QR(u, n, k):
 
     Args:
         u (torch.Tensor): Uniformly distributed samples in [0, 1] of shape `(..., n*k)`.
-        n (int): number of rows
-        k (int): number of columns with `k<=n`
+        n (int): Number of rows.
+        k (int): Number of columns with `k<=n`.
 
     Returns:
         x (torch.Tensor): A batch of random orthogonal matrices of shape `(..., n, k)`.
@@ -76,8 +76,8 @@ def tf_Un_QR(u, n, k):
 
     Args:
         u (torch.Tensor): Uniformly distributed samples in [0, 1] of shape `(..., 2*n*k)`.
-        n (int): number of rows
-        k (int): number of columns with `k<=n`
+        n (int): Number of rows.
+        k (int): Number of columns with `k<=n`.
 
     Returns:
         x (torch.Tensor): A batch of random unitary matrices of shape `(..., n, k)`.
@@ -146,8 +146,8 @@ def tf_On_eig(u, n, k):
 
     Args:
         u (torch.Tensor): Uniformly distributed samples in [0, 1] of shape `(..., n*(n+1)//2 + 2*n)`.
-        n (int): number of rows
-        k (int): number of columns with `k<=n`
+        n (int): Number of rows.
+        k (int): Number of columns with `k<=n`.
 
     Returns:
         x (torch.Tensor): A batch of random orthogonal matrices of shape `(..., n, k)`.
@@ -222,8 +222,8 @@ def tf_Un_eig(u, n, k):
 
     Args:
         u (torch.Tensor): Uniformly distributed samples in [0, 1] of shape `(..., n**2 + 2*n)`.
-        n (int): number of rows
-        k (int): number of columns with `k<=n`
+        n (int): Number of rows.
+        k (int): Number of columns with `k<=n`.
 
     Returns:
         x (torch.Tensor): A batch of random unitary matrices of shape `(..., n, k)`.
@@ -301,8 +301,8 @@ def tf_Spn_SVD(u, n, k):
 
     Args:
         u (torch.Tensor): Uniformly distributed samples in [0, 1] of shape `(..., 4*n**2)`.
-        n (int): number of rows
-        k (int): number of columns with `k<=n`
+        n (int): Half the number of rows.
+        k (int): Half the number of columns with `k<=n`.
 
     Returns:
         x (torch.Tensor): A batch of random symplectic unitary matrices of shape `(..., 2n, 2k)`.

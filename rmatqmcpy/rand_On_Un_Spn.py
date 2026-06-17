@@ -11,25 +11,26 @@ from .tf_On_Un_Spn import (
     tf_Spn_SVD,
 )
 
-def rand_On_QR(N, n, seed=None, device=None, qp_unif_gen=None):
+def rand_On_QR(N, n, k, seed=None, device=None, qp_unif_gen=None):
     r"""
-    Generate a batch of `N` random orthogonal matrices of size `(N, n, n)` using the QR decomposition. 
+    Generate a batch of `N` random orthogonal matrices of size `(N, n, k)` using the QR decomposition. 
     
     Args:
         N (int): Number of samples to generate.
-        n (int): Dimension of the square matrix.
+        n (int): Number of rows.
+        k (int): Number of columns with `k<=n`.
         seed (int, optional): Random seed for reproducibility.
         device (str, optional): Device to store the tensor on (e.g., "cpu", "cuda").
         qp_unif_gen (qmcpy.DiscreteDistribution, optional): QMCPy distribution generator.
 
     Returns:
-        x (torch.Tensor): A batch of `N` random orthogonal matrices of size `(N, n, n)`.
+        x (torch.Tensor): A batch of `N` random orthogonal matrices of size `(N, n, k)`.
     
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
 
         
-        >>> q = rand_On_QR(2,3,seed=7)
+        >>> q = rand_On_QR(2,3,3,seed=7)
         >>> q.shape 
         torch.Size([2, 3, 3])
         >>> q
@@ -41,7 +42,7 @@ def rand_On_QR(N, n, seed=None, device=None, qp_unif_gen=None):
                  [-0.5690,  0.3904,  0.7237],
                  [ 0.0820, -0.8488,  0.5224]]])
         
-        >>> q = rand_On_QR(2,3,seed=7,qp_unif_gen=qp.Net)
+        >>> q = rand_On_QR(2,3,3,seed=7,qp_unif_gen=qp.Net)
         >>> q.shape 
         torch.Size([2, 3, 3])
         >>> q
@@ -55,28 +56,29 @@ def rand_On_QR(N, n, seed=None, device=None, qp_unif_gen=None):
     """
     if qp_unif_gen is None: qp_unif_gen = qp.IIDStdUniform
     rng = agsutil.get_torch_rng(seed,device=device)
-    u = torch.from_numpy(qp_unif_gen(dimension=n**2,seed=seed)(N)).to(device)
-    q = tf_On_QR(u,n,n)
+    u = torch.from_numpy(qp_unif_gen(dimension=n*k,seed=seed)(N)).to(device)
+    q = tf_On_QR(u,n,k)
     return q
 
-def rand_Un_QR(N, n, seed=None, device=None, qp_unif_gen=None):
+def rand_Un_QR(N, n, k, seed=None, device=None, qp_unif_gen=None):
     r"""
-    Generate a batch of `N` random unitary matrices of size `(N, n, n)` using the QR decomposition. 
+    Generate a batch of `N` random unitary matrices of size `(N, n, k)` using the QR decomposition. 
     
     Args:
         N (int): Number of samples to generate.
-        n (int): Dimension of the square matrix.
+        n (int): Number of rows.
+        k (int): Number of columns with `k<=n`.
         seed (int, optional): Random seed for reproducibility.
         device (str, optional): Device to store the tensor on (e.g., "cpu", "cuda").
         qp_unif_gen (qmcpy.DiscreteDistribution, optional): QMCPy distribution generator.
 
     Returns:
-        x (torch.Tensor): A batch of `N` random unitary matrices of size `(N, n, n)`.
+        x (torch.Tensor): A batch of `N` random unitary matrices of size `(N, n, k)`.
     
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
 
-        >>> q = rand_Un_QR(2,3,seed=7)
+        >>> q = rand_Un_QR(2,3,3,seed=7)
         >>> q.shape 
         torch.Size([2, 3, 3])
         >>> q
@@ -88,7 +90,7 @@ def rand_Un_QR(N, n, seed=None, device=None, qp_unif_gen=None):
                  [ 0.1241+0.1499j, -0.6573-0.5715j,  0.3584+0.2739j],
                  [ 0.1027-0.5515j, -0.0820-0.4666j, -0.2046-0.6473j]]])
         
-        >>> q = rand_Un_QR(2,3,seed=7,qp_unif_gen=qp.Net)
+        >>> q = rand_Un_QR(2,3,3,seed=7,qp_unif_gen=qp.Net)
         >>> q.shape 
         torch.Size([2, 3, 3])
         >>> q
@@ -102,28 +104,29 @@ def rand_Un_QR(N, n, seed=None, device=None, qp_unif_gen=None):
     """
     if qp_unif_gen is None: qp_unif_gen = qp.IIDStdUniform
     rng = agsutil.get_torch_rng(seed,device=device)
-    u = torch.from_numpy(qp_unif_gen(dimension=2*n**2,seed=seed)(N)).to(device)
-    q = tf_Un_QR(u,n,n)
+    u = torch.from_numpy(qp_unif_gen(dimension=2*n*k,seed=seed)(N)).to(device)
+    q = tf_Un_QR(u,n,k)
     return q
 
-def rand_On_eig(N, n, seed=None, device=None, qp_unif_gen=None):
+def rand_On_eig(N, n, k, seed=None, device=None, qp_unif_gen=None):
     r"""
-    Generate a batch of `N` random orthogonal matrices of size `(N, n, n)` using the eigenvalue decomposition.
+    Generate a batch of `N` random orthogonal matrices of size `(N, n, k)` using the eigenvalue decomposition.
     
     Args:
         N (int): Number of samples to generate.
-        n (int): Dimension of the square matrix.
+        n (int): Number of rows.
+        k (int): Number of columns with `k<=n`.
         seed (int, optional): Random seed for reproducibility.
         device (str, optional): Device to store the tensor on (e.g., "cpu", "cuda").
         qp_unif_gen (qmcpy.DiscreteDistribution, optional): QMCPy distribution generator.
 
     Returns:
-        x (torch.Tensor): A batch of `N` random orthogonal matrices of size `(N, n, n)`.
+        x (torch.Tensor): A batch of `N` random orthogonal matrices of size `(N, n, k)`.
     
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
 
-        >>> q = rand_On_eig(2,3,seed=7)
+        >>> q = rand_On_eig(2,3,3,seed=7)
         >>> q.shape 
         torch.Size([2, 3, 3])
         >>> q
@@ -135,7 +138,7 @@ def rand_On_eig(N, n, seed=None, device=None, qp_unif_gen=None):
                  [-0.1140, -0.9409,  0.3190],
                  [ 0.4150,  0.2467,  0.8757]]])
         
-        >>> q = rand_On_eig(2,3,seed=7,qp_unif_gen=qp.Net)
+        >>> q = rand_On_eig(2,3,3,seed=7,qp_unif_gen=qp.Net)
         >>> q.shape 
         torch.Size([2, 3, 3])
         >>> q
@@ -149,27 +152,28 @@ def rand_On_eig(N, n, seed=None, device=None, qp_unif_gen=None):
     """
     if qp_unif_gen is None: qp_unif_gen = qp.IIDStdUniform
     u = torch.from_numpy(qp_unif_gen(dimension=n*(n-1)//2+2*n,seed=seed)(N)).to(device)
-    q = tf_On_eig(u,n,n)
+    q = tf_On_eig(u,n,k)
     return q
 
-def rand_Un_eig(N, n, seed=None, device=None, qp_unif_gen=None):
+def rand_Un_eig(N, n, k, seed=None, device=None, qp_unif_gen=None):
     r"""
-    Generate a batch of `N` random unitary matrices of size `(N, n, n)` using the eigenvalue decomposition.
+    Generate a batch of `N` random unitary matrices of size `(N, n, k)` using the eigenvalue decomposition.
     
     Args:
         N (int): Number of samples to generate.
-        n (int): Dimension of the square matrix.
+        n (int): Number of rows.
+        k (int): Number of columns with `k<=n`.
         seed (int, optional): Random seed for reproducibility.
         device (str, optional): Device to store the tensor on (e.g., "cpu", "cuda").
         qp_unif_gen (qmcpy.DiscreteDistribution, optional): QMCPy distribution generator.
 
     Returns:
-        x (torch.Tensor): A batch of `N` random unitary matrices of size `(N, n, n)`.
+        x (torch.Tensor): A batch of `N` random unitary matrices of size `(N, n, k)`.
     
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
 
-        >>> q = rand_Un_eig(2,3,seed=7)
+        >>> q = rand_Un_eig(2,3,3,seed=7)
         >>> q.shape 
         torch.Size([2, 3, 3])
         >>> q
@@ -181,7 +185,7 @@ def rand_Un_eig(N, n, seed=None, device=None, qp_unif_gen=None):
                  [ 0.0135-0.9445j,  0.1002+0.0782j, -0.2065+0.2213j],
                  [ 0.1714+0.2221j,  0.3955+0.4685j,  0.1415+0.7248j]]])
         
-        >>> q = rand_Un_eig(2,3,seed=7,qp_unif_gen=qp.Net)
+        >>> q = rand_Un_eig(2,3,3,seed=7,qp_unif_gen=qp.Net)
         >>> q.shape 
         torch.Size([2, 3, 3])
         >>> q
@@ -195,27 +199,28 @@ def rand_Un_eig(N, n, seed=None, device=None, qp_unif_gen=None):
     """
     if qp_unif_gen is None: qp_unif_gen = qp.IIDStdUniform
     u = torch.from_numpy(qp_unif_gen(dimension=n**2+n,seed=seed)(N)).to(device)
-    q = tf_Un_eig(u,n,n)
+    q = tf_Un_eig(u,n,k)
     return q
 
-def rand_Spn_SVD(N, n, seed=None, device=None, qp_unif_gen=None):
+def rand_Spn_SVD(N, n, k, seed=None, device=None, qp_unif_gen=None):
     r"""
-    Generate a batch of `N` random symplectic unitary matrices of size `(N, 2n, 2n)` using the SVD decomposition. 
+    Generate a batch of `N` random symplectic unitary matrices of size `(N, 2n, 2k)` using the SVD decomposition. 
     
     Args:
         N (int): Number of samples to generate.
-        n (int): Half the dimension of the square matrix.
+        n (int): Half the number of rows.
+        k (int): Half the number of columns with `k<=n`.
         seed (int, optional): Random seed for reproducibility.
         device (str, optional): Device to store the tensor on (e.g., "cpu", "cuda").
         qp_unif_gen (qmcpy.DiscreteDistribution, optional): QMCPy distribution generator.
 
     Returns:
-        x (torch.Tensor): A batch of `N` random symplectic unitary matrices of size `(N, 2n, 2n)`.
+        x (torch.Tensor): A batch of `N` random symplectic unitary matrices of size `(N, 2n, 2k)`.
     
     Examples:
         >>> torch.set_default_dtype(torch.float64) 
 
-        >>> q = rand_Spn_SVD(2,3,seed=7)
+        >>> q = rand_Spn_SVD(2,3,3,seed=7)
         >>> q.shape 
         torch.Size([2, 6, 6])
         >>> q
@@ -245,7 +250,7 @@ def rand_Spn_SVD(N, n, seed=None, device=None, qp_unif_gen=None):
                  [-0.2102+0.2346j,  0.2066-0.4166j, -0.2735+0.3259j,  0.1009-0.1924j,
                    0.1127+0.3529j,  0.5547-0.1064j]]])
         
-        >>> q = rand_Spn_SVD(2,3,seed=7,qp_unif_gen=qp.Net)
+        >>> q = rand_Spn_SVD(2,3,3,seed=7,qp_unif_gen=qp.Net)
         >>> q.shape 
         torch.Size([2, 6, 6])
         >>> q
@@ -277,5 +282,5 @@ def rand_Spn_SVD(N, n, seed=None, device=None, qp_unif_gen=None):
     """
     if qp_unif_gen is None: qp_unif_gen = qp.IIDStdUniform
     u = torch.from_numpy(qp_unif_gen(dimension=4*n**2,seed=seed)(N)).to(device)
-    q = tf_Spn_SVD(u,n,n)
+    q = tf_Spn_SVD(u,n,k)
     return q

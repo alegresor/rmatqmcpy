@@ -51,7 +51,8 @@ def rand_flag_R(N, n, delta=None, seed=None, rand_On=None, qp_unif_gen=None, dev
     if rand_On is None: rand_On = rand_On_QR
     assert rand_On in [rand_On_QR,rand_On_eig]
     assert not torch.is_complex(delta)
-    q = rand_On(N=N,n=delta.size(-1),seed=seed,device=delta.device,qp_unif_gen=qp_unif_gen)
+    n = delta.size(-1)
+    q = rand_On(N=N,n=n,k=n,seed=seed,device=delta.device,qp_unif_gen=qp_unif_gen)
     x = torch.einsum("...ij,...j,...kj->...ik",q,delta.to(q.dtype),q)
     return x
 
@@ -95,7 +96,8 @@ def rand_flag_C(N, n, delta=None, seed=None, rand_Un=None, qp_unif_gen=None, dev
     if rand_Un is None: rand_Un = rand_Un_QR
     assert rand_Un in [rand_Un_QR,rand_Un_eig]
     assert not torch.is_complex(delta)
-    q = rand_Un(N=N,n=delta.size(-1),seed=seed,device=delta.device,qp_unif_gen=qp_unif_gen)
+    n = delta.size(-1)
+    q = rand_Un(N=N,n=n,k=n,seed=seed,device=delta.device,qp_unif_gen=qp_unif_gen)
     x = torch.einsum("...ij,...j,...kj->...ik",q,delta.to(q.dtype),q.conj())
     return x
 
@@ -157,7 +159,7 @@ def rand_flag_H(N, n, delta=None, seed=None, rand_Spn=None, qp_unif_gen=None, de
     if rand_Spn is None: rand_Spn = rand_Spn_SVD
     assert rand_Spn in [rand_Spn_SVD]
     assert not torch.is_complex(delta)
-    q = rand_Spn(N=N,n=n,seed=seed,device=delta.device,qp_unif_gen=qp_unif_gen)
+    q = rand_Spn(N=N,n=n,k=n,seed=seed,device=delta.device,qp_unif_gen=qp_unif_gen)
     lam_paired = torch.cat([delta, delta], dim=-1)
     x = torch.einsum("...ij,...j,...kj->...ik", q,lam_paired.to(q.dtype),q.conj())
     return x
@@ -195,7 +197,7 @@ def rand_LGr_R(N, n, seed=None, rand_Un=None, qp_unif_gen=None, device=None):
     if qp_unif_gen is None: qp_unif_gen = qp.IIDStdUniform
     if rand_Un is None: rand_Un = rand_Un_QR
     assert rand_Un in [rand_Un_QR,rand_Un_eig]
-    q = rand_Un(N=N,n=n,seed=seed,device=device,qp_unif_gen=qp_unif_gen)
+    q = rand_Un(N=N,n=n,k=n,seed=seed,device=device,qp_unif_gen=qp_unif_gen)
     x = torch.einsum("...ij,...kj->...ik",q,q)
     return x
 
@@ -250,7 +252,7 @@ def rand_LGr_C(N, n, seed=None, rand_Spn=None, qp_unif_gen=None, device=None):
     if qp_unif_gen is None: qp_unif_gen = qp.IIDStdUniform
     if rand_Spn is None: rand_Spn = rand_Spn_SVD
     assert rand_Spn in [rand_Spn_SVD]
-    q = rand_Spn(N=N,n=n,seed=seed,device=device,qp_unif_gen=qp_unif_gen)
+    q = rand_Spn(N=N,n=n,k=n,seed=seed,device=device,qp_unif_gen=qp_unif_gen)
     I_nn = torch.diag(torch.cat([
         torch.ones(n,device=device), 
         -torch.ones(n,device=device)
@@ -310,7 +312,7 @@ def rand_LGr_H(N, n, seed=None, rand_Un=None, qp_unif_gen=None, device=None):
     if qp_unif_gen is None: qp_unif_gen = qp.IIDStdUniform
     if rand_Un is None: rand_Un = rand_Un_QR
     assert rand_Un in [rand_Un_QR,rand_Un_eig]
-    q = rand_Un(N=N,n=2*n,seed=seed,device=device,qp_unif_gen=qp_unif_gen)
+    q = rand_Un(N=N,n=2*n,k=2*n,seed=seed,device=device,qp_unif_gen=qp_unif_gen)
     I_N = torch.eye(n,device=device,dtype=q.dtype)
     O_N = torch.zeros(n,n,device=device,dtype=q.dtype)
     J = torch.cat([
@@ -357,7 +359,7 @@ def rand_Stiefel_R(N, n, k=1, seed=None, rand_On=None, qp_unif_gen=None, device=
     if rand_On is None: rand_On = rand_On_QR
     assert rand_On in [rand_On_QR,rand_On_eig]
     assert 1<=k<=n
-    x = rand_On(N=N,n=n,seed=seed,device=device,qp_unif_gen=qp_unif_gen)[...,:k]
+    x = rand_On(N=N,n=n,k=n,seed=seed,device=device,qp_unif_gen=qp_unif_gen)[...,:k]
     return x
 
 def rand_Stiefel_C(N, n, k=1, seed=None, rand_Un=None, qp_unif_gen=None, device=None):
@@ -397,7 +399,7 @@ def rand_Stiefel_C(N, n, k=1, seed=None, rand_Un=None, qp_unif_gen=None, device=
     if rand_Un is None: rand_Un = rand_Un_QR
     assert rand_Un in [rand_Un_QR,rand_Un_eig]
     assert 1<=k<=n
-    x = rand_Un(N=N,n=n,seed=seed,device=device,qp_unif_gen=qp_unif_gen)[..., :k]
+    x = rand_Un(N=N,n=n,k=n,seed=seed,device=device,qp_unif_gen=qp_unif_gen)[..., :k]
     return x
 
 def rand_Stiefel_H(N, n, k=1, seed=None, rand_Spn=None, qp_unif_gen=None, device=None):
@@ -461,7 +463,7 @@ def rand_Stiefel_H(N, n, k=1, seed=None, rand_Spn=None, qp_unif_gen=None, device
     if rand_Spn is None: rand_Spn = rand_Spn_SVD
     assert rand_Spn in [rand_Spn_SVD]
     assert 1<=k<=n
-    q = rand_Spn(N=N,n=n,seed=seed,device=device,qp_unif_gen=qp_unif_gen)
+    q = rand_Spn(N=N,n=n,k=n,seed=seed,device=device,qp_unif_gen=qp_unif_gen)
     x = torch.cat([q[...,:k],q[...,n:n+k]],dim=-1)
     return x
 
