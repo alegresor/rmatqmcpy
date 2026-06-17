@@ -489,22 +489,22 @@ def rand_Gr_R(N, n, k=1, seed=None, rand_On=None, qp_unif_gen=None, device=None)
         >>> x.shape 
         torch.Size([2, 4, 4])
         >>> x
-        tensor([[[ 0.6854, -0.4075,  0.4519,  0.4000],
-                 [-0.4075,  0.4721,  0.5853,  0.5181],
-                 [ 0.4519,  0.5853,  0.3510, -0.5745],
-                 [ 0.4000,  0.5181, -0.5745,  0.4915]],
+        tensor([[[ 0.2631, -0.2864, -0.7190,  0.5760],
+                 [-0.2864,  0.8887, -0.2795,  0.2239],
+                 [-0.7190, -0.2795,  0.2984,  0.5620],
+                 [ 0.5760,  0.2239,  0.5620,  0.5498]],
         <BLANKLINE>
-                [[ 0.9430, -0.1426,  0.2999, -0.0213],
-                 [-0.1426,  0.6432,  0.7504, -0.0533],
-                 [ 0.2999,  0.7504, -0.5782,  0.1122],
-                 [-0.0213, -0.0533,  0.1122,  0.9920]]])
+                [[ 0.5176,  0.1079, -0.3608, -0.7683],
+                 [ 0.1079,  0.9759,  0.0807,  0.1718],
+                 [-0.3608,  0.0807,  0.7302, -0.5746],
+                 [-0.7683,  0.1718, -0.5746, -0.2237]]])
     """
     if qp_unif_gen is None: qp_unif_gen = qp.IIDStdUniform
     if rand_On is None: rand_On = rand_On_QR
     assert rand_On in [rand_On_QR,rand_On_eig]
     assert 1<=k<=n
-    delta = torch.cat([torch.ones(k,device=device),-torch.ones(n-k,device=device)])
-    x = rand_flag_R(N=N,n=n,delta=delta,seed=seed,rand_On=rand_On,qp_unif_gen=qp_unif_gen)
+    q = rand_On(N=N,n=n,k=k,seed=seed,qp_unif_gen=qp_unif_gen)
+    x = 2*torch.einsum("...ij,...kj->...ik",q,q)-torch.eye(n)
     return x
 
 def rand_Gr_C(N, n, k=1, seed=None, rand_Un=None, qp_unif_gen=None, device=None):
@@ -530,22 +530,22 @@ def rand_Gr_C(N, n, k=1, seed=None, rand_Un=None, qp_unif_gen=None, device=None)
         >>> x.shape 
         torch.Size([2, 4, 4])
         >>> torch.complex(x.real.round(decimals=4)+0.,x.imag.round(decimals=4)+0.)
-        tensor([[[ 0.7358+0.0000j,  0.2834-0.3005j,  0.1940-0.3349j, -0.0361-0.3699j],
-                 [ 0.2834+0.3005j,  0.3541+0.0000j, -0.5891+0.1386j, -0.3821+0.4379j],
-                 [ 0.1940+0.3349j, -0.5891-0.1386j,  0.4329+0.0000j, -0.4424+0.3174j],
-                 [-0.0361+0.3699j, -0.3821-0.4379j, -0.4424-0.3174j,  0.4771+0.0000j]],
+        tensor([[[ 0.1911+0.0000j,  0.3068-0.0473j,  0.2115+0.1051j, -0.2456+0.8666j],
+                 [ 0.3068+0.0473j,  0.8809+0.0000j, -0.0741-0.0522j,  0.1438-0.3143j],
+                 [ 0.2115-0.1051j, -0.0741+0.0522j,  0.9310+0.0000j, -0.0484-0.2585j],
+                 [-0.2456-0.8666j,  0.1438+0.3143j, -0.0484+0.2585j, -0.0031+0.0000j]],
         <BLANKLINE>
-                [[-0.4170+0.0000j, -0.2046+0.2581j,  0.4820+0.5783j,  0.3572+0.1526j],
-                 [-0.2046-0.2581j,  0.9235+0.0000j, -0.0357+0.1713j,  0.0238+0.0871j],
-                 [ 0.4820-0.5783j, -0.0357-0.1713j,  0.6001+0.0000j, -0.1838+0.0939j],
-                 [ 0.3572-0.1526j,  0.0238-0.0871j, -0.1838-0.0939j,  0.8935+0.0000j]]])
+                [[ 0.8180+0.0000j,  0.2741+0.3828j, -0.2263-0.2302j, -0.0199-0.0682j],
+                 [ 0.2741-0.3828j, -0.2178+0.0000j,  0.8249-0.1292j,  0.1734+0.0610j],
+                 [-0.2263+0.2302j,  0.8249+0.1292j,  0.4275+0.0000j, -0.1110-0.0597j],
+                 [-0.0199+0.0682j,  0.1734-0.0610j, -0.1110+0.0597j,  0.9723+0.0000j]]])
     """
     if qp_unif_gen is None: qp_unif_gen = qp.IIDStdUniform
     if rand_Un is None: rand_Un = rand_Un_QR
     assert rand_Un in [rand_Un_QR,rand_Un_eig]
     assert 1<=k<=n
-    delta = torch.cat([torch.ones(k,device=device),-torch.ones(n-k,device=device)])
-    x = rand_flag_C(N=N,n=n,delta=delta,seed=seed,rand_Un=rand_Un,qp_unif_gen=qp_unif_gen)
+    q = rand_Un(N=N,n=n,k=k,seed=seed,qp_unif_gen=qp_unif_gen)
+    x = 2*torch.einsum("...ij,...kj->...ik",q,q.conj())-torch.eye(n)
     return x
 
 def rand_Gr_H(N, n, k=1, seed=None, rand_Spn=None, qp_unif_gen=None, device=None):
@@ -609,6 +609,6 @@ def rand_Gr_H(N, n, k=1, seed=None, rand_Spn=None, qp_unif_gen=None, device=None
     if rand_Spn is None: rand_Spn = rand_Spn_SVD
     assert rand_Spn in [rand_Spn_SVD]
     assert 1<=k<=n
-    delta = torch.cat([torch.ones(k,device=device),-torch.ones(n-k,device=device)])
-    x = rand_flag_H(N=N,n=n,delta=delta,seed=seed,rand_Spn=rand_Spn,qp_unif_gen=qp_unif_gen)
+    q = rand_Spn(N=N,n=n,k=k,seed=seed,qp_unif_gen=qp_unif_gen)
+    x = 2*torch.einsum("...ij,...kj->...ik",q,q.conj())-torch.eye(2*n)
     return x
