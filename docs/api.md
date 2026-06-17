@@ -16,10 +16,11 @@
 
 ::: rmatqmcpy.rand_Stiefel_Gr_flag_LGr
 
-## Random COE, CUE, and CQE matrices
+## Random $\mathrm{O}(n)$, $\mathrm{U}(n)$ and $\mathrm{Sp}(n)$ matrices on $\mathbb{R}$, $\mathbb{C}$, and $\mathbb{H}$ respectively
 
 ::: rmatqmcpy.rand_On_Un_Spn
 
-## Transforms from uniforms to COE, CUE, and CQE matrices
+## Transforms from uniforms to $\mathrm{O}(n)$, $\mathrm{U}(n)$ and $\mathrm{Sp}(n)$
+
 
 ::: rmatqmcpy.tf_On_Un_Spn
