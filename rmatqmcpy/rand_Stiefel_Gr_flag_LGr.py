@@ -345,21 +345,21 @@ def rand_Stiefel_R(N, n, k=1, seed=None, rand_On=None, qp_unif_gen=None, device=
         >>> x.shape 
         torch.Size([2, 4, 3])
         >>> x
-        tensor([[[-0.8103, -0.3240, -0.2849],
-                 [ 0.2444, -0.5330,  0.6263],
-                 [ 0.1163, -0.7775, -0.2398],
-                 [-0.5198,  0.0805,  0.6849]],
+        tensor([[[-0.7177,  0.3121,  0.1379],
+                 [ 0.1644,  0.3183, -0.9033],
+                 [ 0.1398, -0.7875, -0.0974],
+                 [-0.6620, -0.4256, -0.3944]],
         <BLANKLINE>
-                [[-0.6600,  0.6605,  0.3158],
-                 [ 0.3410,  0.5402, -0.6430],
-                 [ 0.0840,  0.4057, -0.1982],
-                 [ 0.6642,  0.3277,  0.6690]]])
+                [[-0.7589,  0.1929,  0.3816],
+                 [ 0.1093, -0.6896,  0.7074],
+                 [ 0.6078,  0.5222,  0.4722],
+                 [ 0.2064, -0.4631, -0.3620]]])
     """
     if qp_unif_gen is None: qp_unif_gen = qp.IIDStdUniform
     if rand_On is None: rand_On = rand_On_QR
     assert rand_On in [rand_On_QR,rand_On_eig]
     assert 1<=k<=n
-    x = rand_On(N=N,n=n,k=n,seed=seed,device=device,qp_unif_gen=qp_unif_gen)[...,:k]
+    x = rand_On(N=N,n=n,k=k,seed=seed,device=device,qp_unif_gen=qp_unif_gen)
     return x
 
 def rand_Stiefel_C(N, n, k=1, seed=None, rand_Un=None, qp_unif_gen=None, device=None):
@@ -385,21 +385,21 @@ def rand_Stiefel_C(N, n, k=1, seed=None, rand_Un=None, qp_unif_gen=None, device=
         >>> x.shape 
         torch.Size([2, 4, 3])
         >>> x
-        tensor([[[-0.5791+0.0748j, -0.2694-0.3827j, -0.1688-0.5285j],
-                 [ 0.0832-0.5342j, -0.0508-0.4185j, -0.4533+0.0390j],
-                 [-0.5636+0.1908j,  0.5696+0.1528j,  0.1186+0.0222j],
-                 [ 0.0717+0.0866j, -0.4132-0.2909j,  0.6626+0.1775j]],
+        tensor([[[-0.6106+0.0789j,  0.0853-0.1095j,  0.2571-0.3622j],
+                 [ 0.1189-0.3923j,  0.2634-0.6302j, -0.1178-0.5404j],
+                 [-0.3917+0.2437j,  0.6549-0.2208j, -0.2803+0.4433j],
+                 [ 0.3137+0.3765j,  0.1450+0.1248j, -0.3241-0.3415j]],
         <BLANKLINE>
-                [[-0.1572-0.5114j, -0.0644-0.0293j,  0.0032+0.0135j],
-                 [-0.2608+0.2782j,  0.3961-0.6225j,  0.3570+0.3802j],
-                 [-0.6609-0.2334j, -0.2368-0.2797j, -0.1690-0.3820j],
-                 [-0.1562-0.2296j, -0.5166+0.2225j,  0.3754+0.6422j]]])
+                [[ 0.0893+0.1079j, -0.1481-0.1997j,  0.8927-0.1751j],
+                 [ 0.0739-0.3969j, -0.1797-0.3939j,  0.0373-0.1982j],
+                 [-0.0191-0.4580j,  0.0510-0.6749j, -0.1948+0.0873j],
+                 [ 0.3224-0.7095j, -0.1439+0.5215j,  0.1805+0.2314j]]])
     """
     if qp_unif_gen is None: qp_unif_gen = qp.IIDStdUniform
     if rand_Un is None: rand_Un = rand_Un_QR
     assert rand_Un in [rand_Un_QR,rand_Un_eig]
     assert 1<=k<=n
-    x = rand_Un(N=N,n=n,k=n,seed=seed,device=device,qp_unif_gen=qp_unif_gen)[..., :k]
+    x = rand_Un(N=N,n=n,k=k,seed=seed,device=device,qp_unif_gen=qp_unif_gen)
     return x
 
 def rand_Stiefel_H(N, n, k=1, seed=None, rand_Spn=None, qp_unif_gen=None, device=None):
@@ -463,8 +463,7 @@ def rand_Stiefel_H(N, n, k=1, seed=None, rand_Spn=None, qp_unif_gen=None, device
     if rand_Spn is None: rand_Spn = rand_Spn_SVD
     assert rand_Spn in [rand_Spn_SVD]
     assert 1<=k<=n
-    q = rand_Spn(N=N,n=n,k=n,seed=seed,device=device,qp_unif_gen=qp_unif_gen)
-    x = torch.cat([q[...,:k],q[...,n:n+k]],dim=-1)
+    x = rand_Spn(N=N,n=n,k=k,seed=seed,device=device,qp_unif_gen=qp_unif_gen)
     return x
 
 def rand_Gr_R(N, n, k=1, seed=None, rand_On=None, qp_unif_gen=None, device=None):
