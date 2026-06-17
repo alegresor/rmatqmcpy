@@ -56,7 +56,7 @@ def rand_On_QR(N, n, seed=None, device=None, qp_unif_gen=None):
     if qp_unif_gen is None: qp_unif_gen = qp.IIDStdUniform
     rng = agsutil.get_torch_rng(seed,device=device)
     u = torch.from_numpy(qp_unif_gen(dimension=n**2,seed=seed)(N)).to(device)
-    q = tf_On_QR(u)
+    q = tf_On_QR(u,n,n)
     return q
 
 def rand_Un_QR(N, n, seed=None, device=None, qp_unif_gen=None):
@@ -103,7 +103,7 @@ def rand_Un_QR(N, n, seed=None, device=None, qp_unif_gen=None):
     if qp_unif_gen is None: qp_unif_gen = qp.IIDStdUniform
     rng = agsutil.get_torch_rng(seed,device=device)
     u = torch.from_numpy(qp_unif_gen(dimension=2*n**2,seed=seed)(N)).to(device)
-    q = tf_Un_QR(u)
+    q = tf_Un_QR(u,n,n)
     return q
 
 def rand_On_eig(N, n, seed=None, device=None, qp_unif_gen=None):
@@ -149,7 +149,7 @@ def rand_On_eig(N, n, seed=None, device=None, qp_unif_gen=None):
     """
     if qp_unif_gen is None: qp_unif_gen = qp.IIDStdUniform
     u = torch.from_numpy(qp_unif_gen(dimension=n*(n-1)//2+2*n,seed=seed)(N)).to(device)
-    q = tf_On_eig(u)
+    q = tf_On_eig(u,n,n)
     return q
 
 def rand_Un_eig(N, n, seed=None, device=None, qp_unif_gen=None):
@@ -195,7 +195,7 @@ def rand_Un_eig(N, n, seed=None, device=None, qp_unif_gen=None):
     """
     if qp_unif_gen is None: qp_unif_gen = qp.IIDStdUniform
     u = torch.from_numpy(qp_unif_gen(dimension=n**2+n,seed=seed)(N)).to(device)
-    q = tf_Un_eig(u)
+    q = tf_Un_eig(u,n,n)
     return q
 
 def rand_Spn_SVD(N, n, seed=None, device=None, qp_unif_gen=None):
@@ -277,5 +277,5 @@ def rand_Spn_SVD(N, n, seed=None, device=None, qp_unif_gen=None):
     """
     if qp_unif_gen is None: qp_unif_gen = qp.IIDStdUniform
     u = torch.from_numpy(qp_unif_gen(dimension=4*n**2,seed=seed)(N)).to(device)
-    q = tf_Spn_SVD(u)
+    q = tf_Spn_SVD(u,n,n)
     return q
