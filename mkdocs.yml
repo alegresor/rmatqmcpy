@@ -4,7 +4,7 @@ nav:
   - Package Reference: api.md
   - Optimal WCE cubature with Matern kernels: examples/opt_rates.matern.ipynb
   - Intrinsic volumes using flag manifolds: examples/intrinsic_volumes.ipynb
-  - Intrinsic volumes using flag manifolds: examples/paper_plots.ipynb
+  - Paper plots: examples/paper_plots.ipynb
 
 plugins:
   - search
