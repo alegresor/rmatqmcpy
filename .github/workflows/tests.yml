@@ -18,8 +18,6 @@ jobs:
       - run: python -V
       - run: pip install -e .
       - run: pip install pytest
-      - run: pip install sympy
-      - run: pip install --ignore-requires-python jackpolynomials
       - run: make doctests
       # - run: pip install -e .[dev]
       # - run: conda env export
