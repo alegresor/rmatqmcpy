@@ -14,13 +14,16 @@ Issues = "https://github.com/alegresor/ManifoldQMC/issues"
 
 [project]
 name = "rmatqmcpy"
-description = "Algorithms, Gradients, and Subplot Utils for `torch` and `matplotlib`"
+description = "Random matrix quasi-Monte Carlo in Python"
 authors = [
     {name="Aleksei G. Sorokin", email="agsorokin3@gmail.com"},
 ]
 readme = "README.md"
 keywords = [
         "flag",
+        "Stiefel",
+        "Grassmann",
+        "Lagrangian Grassman",
         "manifold",
         "quasi-Monte Carlo",
     ]
